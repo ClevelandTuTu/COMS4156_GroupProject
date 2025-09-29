@@ -16,10 +16,17 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
-      - name: Build & test
+      - name: Build & Test
         working-directory: airhotel
         run: mvn -B clean verify
+      - name: Generate Code Coverage
+        working-directory: airhotel
+        run: mvn jacoco:report
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: airhotel/target/site/jacoco
       - name: Run PMD
         working-directory: airhotel
         run: mvn pmd:check
-
