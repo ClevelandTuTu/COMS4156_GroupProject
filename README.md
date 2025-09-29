@@ -6,5 +6,5 @@
 2. Configure JDK25 in the project structure.
 3. Use Intellij for easier maven project management.
 4. Run ```mvn clean install``` on terminal or using the Maven tool in Intellij.
-5. Set up a run configuration for IndividualProjectApplication.
+5. Set up a run configuration for Application.
 6. Integration test with Postman by REST API endpoints.
