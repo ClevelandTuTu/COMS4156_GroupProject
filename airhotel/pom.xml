@@ -27,6 +27,7 @@
 		<url/>
 	</scm>
 	<properties>
+    <maven-pmd-plugin.version>3.21.0</maven-pmd-plugin.version>
 		<java.version>25</java.version>
 	</properties>
 	<dependencies>
@@ -48,6 +49,17 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+      <!-- PMD -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>${maven-pmd-plugin.version}</version>
+        <configuration>
+          <ruleset>${basedir}/maven-pmd-plugin-default.xml</ruleset>
+          <failOnViolation>true</failOnViolation>
+        </configuration>
+      </plugin>
 		</plugins>
 	</build>
 
