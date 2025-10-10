@@ -1,7 +1,7 @@
 package com.project.airhotel.Service;
 
 import com.project.airhotel.Repository.UserRepository;
-import com.project.airhotel.model.User;
+import com.project.airhotel.model.Users;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -18,7 +18,7 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public Optional<User> getById(Long id) {
+    public Optional<Users> getById(Long id) {
         return userRepository.findById(id);
     }
 }

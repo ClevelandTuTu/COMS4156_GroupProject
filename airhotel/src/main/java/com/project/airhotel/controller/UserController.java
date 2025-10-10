@@ -1,7 +1,7 @@
 package com.project.airhotel.controller;
 
 import com.project.airhotel.Service.UserService;
-import com.project.airhotel.model.User;
+import com.project.airhotel.model.Users;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,8 +24,8 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> findById(@PathVariable Long id) {
-        Optional<User> user = userService.getById(id);
+    public ResponseEntity<Users> findById(@PathVariable Long id) {
+        Optional<Users> user = userService.getById(id);
         return user.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

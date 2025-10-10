@@ -13,7 +13,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+@Table(name = "users")
+public class Users {
     @Id
     @Column(nullable = false, unique = true)
     private Long id;
