@@ -62,8 +62,8 @@ CREATE TABLE room_types (
 -- ========= rooms =========
 CREATE TABLE rooms (
                        id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                       hotel_id     CHAR(36)     NOT NULL,
-                       room_type_id CHAR(36)     NOT NULL,
+                       hotel_id     BIGINT     NOT NULL,
+                       room_type_id BIGINT     NOT NULL,
                        room_number  VARCHAR(20)  NOT NULL,
                        floor        INT,
                        status       ENUM('available','maintenance','out_of_service') NOT NULL DEFAULT 'available',
@@ -75,8 +75,8 @@ CREATE TABLE rooms (
 -- ========= room_type_inventory =========
 CREATE TABLE room_type_inventory (
                                      id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                                     hotel_id     CHAR(36)     NOT NULL,
-                                     room_type_id CHAR(36)     NOT NULL,
+                                     hotel_id     BIGINT       NOT NULL,
+                                     room_type_id BIGINT       NOT NULL,
                                      stay_date    DATE         NOT NULL,
                                      total        INT          NOT NULL DEFAULT 0,
                                      reserved     INT          NOT NULL DEFAULT 0,
@@ -90,8 +90,8 @@ CREATE TABLE room_type_inventory (
 -- ========= room_type_daily_price =========
 CREATE TABLE room_type_daily_price (
                                        id                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                                       hotel_id               CHAR(36)     NOT NULL,
-                                       room_type_id           CHAR(36)     NOT NULL,
+                                       hotel_id               BIGINT       NOT NULL,
+                                       room_type_id           BIGINT       NOT NULL,
                                        stay_date              DATE         NOT NULL,
                                        price                  DECIMAL(12,2) NOT NULL,
                                        occupancy_percentage   DECIMAL(5,2),
@@ -104,9 +104,9 @@ CREATE TABLE room_type_daily_price (
 -- ========= loyalty_accounts =========
 CREATE TABLE loyalty_accounts (
                                   id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                                  user_id            CHAR(36)     NOT NULL,
+                                  user_id            BIGINT       NOT NULL,
                                   membership_id      VARCHAR(120) NOT NULL,
-                                  tier               ENUM('guest','manager','admin') NOT NULL,
+                                  tier               ENUM('silver','gold','platinum') NOT NULL,
                                   points             INT          NOT NULL DEFAULT 0,
                                   lifetime_nights    INT          NOT NULL DEFAULT 0,
                                   lifetime_spend_usd DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -120,11 +120,11 @@ CREATE TABLE loyalty_accounts (
 -- ========= reservations =========
 CREATE TABLE reservations (
                               id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                              client_id               CHAR(36),
-                              user_id                 CHAR(36),
-                              hotel_id                CHAR(36)     NOT NULL,
-                              room_type_id            CHAR(36)     NOT NULL,
-                              room_id                 CHAR(36),
+                              client_id               BIGINT,
+                              user_id                 BIGINT,
+                              hotel_id                BIGINT     NOT NULL,
+                              room_type_id            BIGINT     NOT NULL,
+                              room_id                 BIGINT,
                               status                  ENUM('PENDING','CONFIRMED','CANCELED','CHECKED_IN','CHECKED_OUT','NO_SHOW')
                                                                    NOT NULL DEFAULT 'PENDING',
                               check_in_date           DATE         NOT NULL,
@@ -148,21 +148,21 @@ CREATE TABLE reservations (
 -- ========= reservations_status_history =========
 CREATE TABLE reservations_status_history (
                                              id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                                             reservation_id       CHAR(36)     NOT NULL,
+                                             reservation_id       BIGINT     NOT NULL,
                                              from_status          ENUM('PENDING','CONFIRMED','CANCELED','CHECKED_IN','CHECKED_OUT','NO_SHOW') NOT NULL,
                                              to_status            ENUM('PENDING','CONFIRMED','CANCELED','CHECKED_IN','CHECKED_OUT','NO_SHOW') NOT NULL,
                                              changed_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                             changed_by_user_id   CHAR(36),
-                                             changed_by_client_id CHAR(36),
+                                             changed_by_user_id   BIGINT,
+                                             changed_by_client_id BIGINT,
                                              reason               TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= reservations_nightly_prices =========
 CREATE TABLE reservations_nightly_prices (
                                              id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                                             reservation_id CHAR(36)     NOT NULL,
+                                             reservation_id BIGINT       NOT NULL,
                                              stay_date      DATE         NOT NULL,
-                                             room_type_id   CHAR(36),
+                                             room_type_id   BIGINT,
                                              price          DECIMAL(12,2) NOT NULL,
                                              discount       DECIMAL(12,2) NOT NULL DEFAULT 0,
                                              tax            DECIMAL(12,2) NOT NULL DEFAULT 0,
