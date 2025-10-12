@@ -1,6 +1,6 @@
-package com.project.airhotel.Service;
+package com.project.airhotel.service;
 
-import com.project.airhotel.Repository.UserRepository;
+import com.project.airhotel.repository.UserRepository;
 import com.project.airhotel.model.Users;
 import org.springframework.stereotype.Service;
 
