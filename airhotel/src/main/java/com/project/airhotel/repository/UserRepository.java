@@ -1,4 +1,4 @@
-package com.project.airhotel.Repository;
+package com.project.airhotel.repository;
 
 import com.project.airhotel.model.Users;
 import org.springframework.data.jpa.repository.JpaRepository;

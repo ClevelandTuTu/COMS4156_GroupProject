@@ -1,24 +1,40 @@
 package com.project.airhotel.model;
 
+import com.project.airhotel.model.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import java.time.LocalDateTime;
 
-/**
- * @author Ziyang Su
- * @version 1.0.0
- */
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
 @Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {
+    @UniqueConstraint(name = "uq_users_email", columnNames = "email")
+})
 public class Users {
     @Id
-    @Column(nullable = false, unique = true)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String firstName;
-    private String lastName;
+
+    @Column(nullable=false)
     private String email;
+
+    @Column(nullable=false, length=120)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false, length=20)
+    private UserRole role;
+
+    @Column(nullable=false)
+    private Integer phone;
+
+    @CreationTimestamp
+    @Column(nullable=false)
+    private LocalDateTime created_at;
+
+    @UpdateTimestamp
+    @Column(nullable=false)
+    private LocalDateTime updated_at;
 }

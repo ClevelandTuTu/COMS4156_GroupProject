@@ -1,6 +1,6 @@
 package com.project.airhotel.controller;
 
-import com.project.airhotel.Service.UserService;
+import com.project.airhotel.service.UserService;
 import com.project.airhotel.model.Users;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
