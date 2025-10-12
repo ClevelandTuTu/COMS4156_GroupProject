@@ -2,8 +2,8 @@
 -- CREATE DATABASE hotel CHARSET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 -- ========= users =========
-CREATE TABLE users (
-                       id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists users (
+                       id           BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                        email        VARCHAR(255) NOT NULL,
                        name         VARCHAR(120) NOT NULL,
                        role         ENUM('guest','manager','admin') NOT NULL,
@@ -14,8 +14,8 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= clients =========
-CREATE TABLE clients (
-                         id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists clients (
+                         id            BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                          name          VARCHAR(120) NOT NULL,
                          type          ENUM('OTA','HOTEL_WEBSITE','Internal') NOT NULL,
                          api_key_hash  VARCHAR(200) NOT NULL,
@@ -25,8 +25,8 @@ CREATE TABLE clients (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= hotels =========
-CREATE TABLE hotels (
-                        id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists hotels (
+                        id            BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                         name          VARCHAR(120) NOT NULL,
                         brand         VARCHAR(120),
                         address_line1 VARCHAR(200) NOT NULL,
@@ -41,8 +41,8 @@ CREATE TABLE hotels (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= room_types =========
-CREATE TABLE room_types (
-                            id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists room_types (
+                            id           BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                             hotel_id     BIGINT       NOT NULL,
                             code         VARCHAR(50)  NOT NULL,
                             name         VARCHAR(120) NOT NULL,
@@ -60,8 +60,8 @@ CREATE TABLE room_types (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= rooms =========
-CREATE TABLE rooms (
-                       id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists rooms (
+                       id           BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                        hotel_id     BIGINT     NOT NULL,
                        room_type_id BIGINT     NOT NULL,
                        room_number  VARCHAR(20)  NOT NULL,
@@ -73,8 +73,8 @@ CREATE TABLE rooms (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= room_type_inventory =========
-CREATE TABLE room_type_inventory (
-                                     id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists room_type_inventory (
+                                     id           BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                      hotel_id     BIGINT       NOT NULL,
                                      room_type_id BIGINT       NOT NULL,
                                      stay_date    DATE         NOT NULL,
@@ -88,8 +88,8 @@ CREATE TABLE room_type_inventory (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= room_type_daily_price =========
-CREATE TABLE room_type_daily_price (
-                                       id                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists room_type_daily_price (
+                                       id                     BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                        hotel_id               BIGINT       NOT NULL,
                                        room_type_id           BIGINT       NOT NULL,
                                        stay_date              DATE         NOT NULL,
@@ -102,10 +102,9 @@ CREATE TABLE room_type_daily_price (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= loyalty_accounts =========
-CREATE TABLE loyalty_accounts (
-                                  id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists loyalty_accounts (
+                                  id                 BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                   user_id            BIGINT       NOT NULL,
-                                  membership_id      VARCHAR(120) NOT NULL,
                                   tier               ENUM('silver','gold','platinum') NOT NULL,
                                   points             INT          NOT NULL DEFAULT 0,
                                   lifetime_nights    INT          NOT NULL DEFAULT 0,
@@ -113,13 +112,12 @@ CREATE TABLE loyalty_accounts (
                                   annual_nights      INT          NOT NULL DEFAULT 0,
                                   annual_spend_usd   DECIMAL(12,2) NOT NULL DEFAULT 0,
                                   last_stay_at       DATE,
-                                  UNIQUE KEY uq_loyalty_membership (membership_id),
                                   UNIQUE KEY uq_loyalty_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= reservations =========
-CREATE TABLE reservations (
-                              id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists reservations (
+                              id                      BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                               client_id               BIGINT,
                               user_id                 BIGINT,
                               hotel_id                BIGINT     NOT NULL,
@@ -146,8 +144,8 @@ CREATE TABLE reservations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= reservations_status_history =========
-CREATE TABLE reservations_status_history (
-                                             id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists reservations_status_history (
+                                             id                   BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                              reservation_id       BIGINT     NOT NULL,
                                              from_status          ENUM('PENDING','CONFIRMED','CANCELED','CHECKED_IN','CHECKED_OUT','NO_SHOW') NOT NULL,
                                              to_status            ENUM('PENDING','CONFIRMED','CANCELED','CHECKED_IN','CHECKED_OUT','NO_SHOW') NOT NULL,
@@ -158,8 +156,8 @@ CREATE TABLE reservations_status_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========= reservations_nightly_prices =========
-CREATE TABLE reservations_nightly_prices (
-                                             id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE if not exists reservations_nightly_prices (
+                                             id             BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                                              reservation_id BIGINT       NOT NULL,
                                              stay_date      DATE         NOT NULL,
                                              room_type_id   BIGINT,
