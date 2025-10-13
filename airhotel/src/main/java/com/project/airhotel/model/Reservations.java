@@ -46,7 +46,7 @@ public class Reservations {
   @Column(nullable=false)
   private Integer num_guests;
 
-  @Column(nullable=false, length=3)
+  @Column(nullable=false, columnDefinition = "CHAR(3)")
   private String currency;
 
   @Column(nullable=false, precision = 12, scale = 2)
@@ -59,7 +59,7 @@ public class Reservations {
   @Column(nullable=false, length=20)
   private UpgradeStatus upgrade_status = UpgradeStatus.NOT_ELIGIBLE;
 
-  @Lob
+  @Column(columnDefinition = "text")
   private String notes;
 
   @CreationTimestamp

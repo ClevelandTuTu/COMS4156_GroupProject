@@ -26,7 +26,7 @@ public class RoomTypes {
   @Column(nullable=false, length=120)
   private String name;
 
-  @Lob
+  @Column(columnDefinition = "TEXT")
   private String description;
 
   @Column(nullable=false)
