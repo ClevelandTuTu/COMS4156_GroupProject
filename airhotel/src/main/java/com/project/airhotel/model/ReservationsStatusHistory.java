@@ -30,6 +30,6 @@ public class ReservationsStatusHistory {
   private Long changed_by_user_id;
   private Long changed_by_client_id;
 
-  @Lob
+  @Column(columnDefinition = "TEXT")
   private String reason;
 }
