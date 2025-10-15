@@ -16,18 +16,21 @@ public class SpringConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    return http.authorizeHttpRequests(registry -> {
-      registry.requestMatchers("/", "/login").permitAll();
-      registry.anyRequest().authenticated();
-    }).oauth2Login(oauth2Login -> {
-      oauth2Login.loginPage("/login").successHandler(new AuthenticationSuccessHandler() {
-        @Override
-        public void onAuthenticationSuccess(HttpServletRequest request,
-            HttpServletResponse response, Authentication authentication)
-            throws IOException, ServletException {
-          response.sendRedirect("/profile");
-        }
-      });
-    }).build();
+    return http.authorizeHttpRequests(registry -> registry
+            .requestMatchers("/", "/login", "/logout-success").permitAll()
+            .anyRequest().authenticated()
+        )
+        .oauth2Login(oauth2Login -> oauth2Login
+            .loginPage("/login")
+            .successHandler((req, res, auth) -> res.sendRedirect("/profile"))
+        )
+        .logout(logout -> logout
+            .logoutUrl("/logout")
+            .logoutSuccessUrl("/logout-success")
+            .invalidateHttpSession(true)
+            .clearAuthentication(true)
+            .deleteCookies("JSESSIONID")
+        )
+        .build();
   }
 }

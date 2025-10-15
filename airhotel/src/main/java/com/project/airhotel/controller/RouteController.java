@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class RouteController {
 
   @GetMapping({"/", "/index"})
+  @ResponseBody
   public String index() {
     return "Welcome to our hotel reservation App AirHotel!";
   }
@@ -18,15 +19,18 @@ public class RouteController {
   public String login() {
     return "custom-login"; // resolves to src/main/resources/templates/custom-login.html via Thymeleaf
   }
+  
+  @GetMapping("/logout-success")
+  @ResponseBody
+  public String logoutSuccess() {
+    return "You've been logged out successfully!"; // resolves to src/main/resources/templates/custom-login.html via Thymeleaf
+  }
 
   // sample protected endpoint
   @GetMapping("/profile")
-  @ResponseBody
   public String restricted(OAuth2AuthenticationToken token, Model model) {
-    return String.format(
-        "Successfully logged in as %s | Name: %s",
-        token.getPrincipal().getAttribute("email"),
-        token.getPrincipal().getAttribute("name")
-    );
+    model.addAttribute("email", token.getPrincipal().getAttribute("email"));
+    model.addAttribute("name", token.getPrincipal().getAttribute("name"));
+    return "profile";
   }
 }
