@@ -5,7 +5,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 
 @Controller
 public class RouteController {
@@ -20,7 +19,7 @@ public class RouteController {
   public String login() {
     return "custom-login"; // resolves to src/main/resources/templates/custom-login.html via Thymeleaf
   }
-
+  
   @GetMapping("/logout-success")
   @ResponseBody
   public String logoutSuccess() {
