@@ -1,5 +1,6 @@
 package com.project.airhotel.exception;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -7,13 +8,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentConversionNotSupportedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Ziyang Su
@@ -73,20 +78,84 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
-    String msg = "Parameter '" + ex.getName() + "' type mismatch";
+    String required = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "required type";
+    String msg = "Parameter '" + ex.getName() + "' type mismatch: expected " + required +
+        (ex.getValue() != null ? (", but got '" + ex.getValue() + "'") : "");
+    if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+      Object[] constants = ex.getRequiredType().getEnumConstants();
+      String allowed = Arrays.stream(constants).map(Object::toString).collect(Collectors.joining(", "));
+      msg += ". Allowed values: [" + allowed + "]";
+    }
     return ApiError.of(400, msg, req.getRequestURI());
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError handleNotReadable(HttpMessageNotReadableException ex, HttpServletRequest req) {
+    Throwable cause = ex.getMostSpecificCause();
+
+    switch (cause) {
+      case com.fasterxml.jackson.databind.exc.InvalidFormatException ife -> {
+        var targetType = ife.getTargetType();
+        String path = ife.getPath().stream().map(JsonMappingException.Reference::getFieldName).collect(Collectors.joining("."));
+        String msg = "Field '" + path + "' has invalid value '" + ife.getValue() + "'";
+        if (targetType != null && targetType.isEnum()) {
+          Object[] constants = targetType.getEnumConstants();
+          String allowed = Arrays.stream(constants).map(Object::toString).collect(Collectors.joining(", "));
+          msg += ". Allowed values: [" + allowed + "]";
+        } else if (targetType != null) {
+          msg += " for type " + targetType.getSimpleName();
+        }
+        return ApiError.of(400, msg, req.getRequestURI());
+      }
+
+      case java.time.format.DateTimeParseException dtpe -> {
+        String msg = "Invalid date format: expected 'yyyy-MM-dd'. " + dtpe.getParsedString();
+        return ApiError.of(400, msg, req.getRequestURI());
+      }
+
+      case com.fasterxml.jackson.databind.exc.MismatchedInputException mie -> {
+        String path = mie.getPath().stream().map(JsonMappingException.Reference::getFieldName).collect(Collectors.joining("."));
+        String at = path.isEmpty() ? "" : (" at '" + path + "'");
+        return ApiError.of(400, "Malformed JSON" + at + ": " + mie.getOriginalMessage(), req.getRequestURI());
+      }
+      default -> {
+      }
+    }
+
     return ApiError.of(400, "Malformed JSON request", req.getRequestURI());
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   @ResponseStatus(HttpStatus.CONFLICT)
   public ApiError handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
-    return ApiError.of(409, "Data integrity violation", req.getRequestURI());
+    String msg;
+
+    Throwable root = org.springframework.core.NestedExceptionUtils.getMostSpecificCause(ex);
+    String lower = root.getMessage() != null ? root.getMessage().toLowerCase() : "";
+
+    if (lower.contains("uq_res_client_src_code") || lower.contains("unique")) {
+      msg = "Duplicate key violation: client_id + source_reservation_code must be unique";
+    } else if (lower.contains("foreign key")) {
+      msg = "Foreign key violation";
+    } else {
+      msg = root.getMessage();
+    }
+    return ApiError.of(409, msg, req.getRequestURI());
+  }
+
+  @ExceptionHandler(MissingPathVariableException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiError handleMissingPathVar(MissingPathVariableException ex, HttpServletRequest req) {
+    return ApiError.of(400, "Missing path variable: " + ex.getVariableName(), req.getRequestURI());
+  }
+
+  @ExceptionHandler(MethodArgumentConversionNotSupportedException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiError handleConversionNotSupported(MethodArgumentConversionNotSupportedException ex, HttpServletRequest req) {
+    String required = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "required type";
+    String msg = "Type conversion not supported for parameter '" + ex.getName() + "': expected " + required;
+    return ApiError.of(400, msg, req.getRequestURI());
   }
 
   @ExceptionHandler(Exception.class)
