@@ -23,12 +23,24 @@ public interface ReservationsRepository extends JpaRepository<Reservations, Long
                                             @Param("status") ReservationStatus status);
 
   @Query("""
-         SELECT r FROM Reservations r
-         WHERE r.hotel_id = :hotelId
-           AND r.check_in_date >= :start
-           AND r.check_out_date <= :end
-         """)
+      SELECT r FROM Reservations r
+      WHERE r.hotel_id = :hotelId
+        AND r.check_in_date >= :start
+        AND r.check_out_date <= :end
+      """)
   List<Reservations> findByHotelIdAndStayRange(@Param("hotelId") Long hotelId,
                                                @Param("start") LocalDate start,
                                                @Param("end") LocalDate end);
+
+  @Query("""
+      SELECT r FROM Reservations r
+      WHERE r.hotel_id = :hotelId
+        AND r.status = :status
+        AND r.check_in_date >= :start
+        AND r.check_out_date <= :end
+      """)
+  List<Reservations> findByHotelIdAndStatusAndStayRange(@Param("hotelId") Long hotelId,
+                                                        @Param("status") ReservationStatus status,
+                                                        @Param("start") LocalDate start,
+                                                        @Param("end") LocalDate end);
 }
