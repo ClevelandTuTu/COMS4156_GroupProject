@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
@@ -128,7 +129,7 @@ public class ManagerReservationServiceTest {
 
     var req = new ReservationUpdateRequest();
     req.setCheckInDate(LocalDate.of(2025, 10, 20));
-    req.setCheckOutDate(LocalDate.of(2025, 10, 23)); // 3 晚
+    req.setCheckOutDate(LocalDate.of(2025, 10, 23));
     req.setNumGuests(3);
     req.setCurrency("USD");
     req.setPriceTotal(new BigDecimal("300.00"));
@@ -148,7 +149,7 @@ public class ManagerReservationServiceTest {
 
     var req = new ReservationUpdateRequest();
     req.setCheckInDate(LocalDate.of(2025, 10, 22));
-    req.setCheckOutDate(LocalDate.of(2025, 10, 22)); // same day -> nights 0 -> BAD_REQUEST
+    req.setCheckOutDate(LocalDate.of(2025, 10, 22));
 
     assertThatThrownBy(() -> service.patchReservation(1L, 100L, req))
         .isInstanceOf(BadRequestException.class)
@@ -173,7 +174,7 @@ public class ManagerReservationServiceTest {
 
   @Test
   void applyUpgrade_ok() {
-    sampleRes.setUpgrade_status(UpgradeStatus.NOT_ELIGIBLE);
+    sampleRes.setUpgrade_status(UpgradeStatus.ELIGIBLE);
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
     doNothing().when(guards).ensureRoomTypeExists(99L);
     when(reservationsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -188,16 +189,21 @@ public class ManagerReservationServiceTest {
   }
 
   @Test
-  void applyUpgrade_alreadyApplied_throw() {
+  void applyUpgrade_alreadyApplied_noThrow_andIdempotent() {
     sampleRes.setUpgrade_status(UpgradeStatus.APPLIED);
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
+    doNothing().when(guards).ensureRoomTypeExists(99L);
+    when(reservationsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     var req = new ApplyUpgradeRequest();
     req.setNewRoomTypeId(99L);
 
-    assertThatThrownBy(() -> service.applyUpgrade(1L, 100L, req))
-        .isInstanceOf(BadRequestException.class)
-        .hasMessageContaining("Already applied");
+    assertThatCode(() -> service.applyUpgrade(1L, 100L, req))
+        .doesNotThrowAnyException();
+
+    assertThat(sampleRes.getUpgrade_status()).isEqualTo(UpgradeStatus.APPLIED);
+    assertThat(sampleRes.getRoom_type_id()).isEqualTo(99L);
+    verify(reservationsRepository).save(any(Reservations.class));
   }
 
   // ---------- checkIn ----------
