@@ -6,8 +6,10 @@ import com.project.airhotel.model.Reservations;
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.service.ManagerReservationService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,6 +26,7 @@ import java.util.List;
  * @author Ziyang Su
  * @version 1.0.0
  */
+@Validated
 @RestController
 @RequestMapping("/manager/hotels/{hotelId}/reservations")
 public class ManagerReservationController {
@@ -44,8 +47,8 @@ public class ManagerReservationController {
   public List<Reservations> list(
       @PathVariable Long hotelId,
       @RequestParam(required = false) ReservationStatus status,
-      @RequestParam(required = false) LocalDate start,
-      @RequestParam(required = false) LocalDate end) {
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
     return reservationService.listReservations(hotelId, status, start, end);
   }
 
