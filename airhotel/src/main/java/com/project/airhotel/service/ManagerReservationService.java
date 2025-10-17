@@ -39,11 +39,15 @@ public class ManagerReservationService {
   public List<Reservations> listReservations(Long hotelId, ReservationStatus status,
                                              LocalDate start, LocalDate end) {
     managerEntityGuards.ensureHotelExists(hotelId);
+    boolean hasDates = (start != null && end != null);
+    if (status != null && hasDates) {
+      return reservationsRepository.findByHotelIdAndStatusAndStayRange(hotelId, status, start, end);
+    }
+    if (hasDates) {
+      return reservationsRepository.findByHotelIdAndStayRange(hotelId, start, end);
+    }
     if (status != null) {
       return reservationsRepository.findByHotelIdAndStatus(hotelId, status);
-    }
-    if (start != null && end != null) {
-      return reservationsRepository.findByHotelIdAndStayRange(hotelId, start, end);
     }
     return reservationsRepository.findByHotelId(hotelId);
   }
