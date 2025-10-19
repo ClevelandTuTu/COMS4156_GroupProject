@@ -47,7 +47,6 @@ public class ReservationCoreService {
       throw new BadRequestException("Illegal status transition: " + from + " -> " + to);
     }
     r.setStatus(to);
-    System.out.println("from: " + from + " to: " + to);
     Reservations saved = reservationsRepository.save(r);
 
     ReservationsStatusHistory h = new ReservationsStatusHistory();
