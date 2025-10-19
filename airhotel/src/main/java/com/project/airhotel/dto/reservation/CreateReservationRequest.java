@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -39,6 +40,14 @@ public class CreateReservationRequest {
   @Pattern(regexp = "^[A-Z]{3}$", message = "currency must be a 3-letter ISO code")
   @NotNull(message = "currency cannot be null")
   private String currency;
+
+  @Schema(description = "total price of the reservation",
+      example = "199.99",
+      requiredMode = Schema.RequiredMode.REQUIRED)
+  @NotNull(message = "priceTotal cannot be null")
+  @Digits(integer = 10, fraction = 2, message = "priceTotal must be up to 10 integer digits and 2 decimals")
+  @PositiveOrZero(message = "priceTotal must be >= 0")
+  private BigDecimal priceTotal;
 
   @Schema(description = "source reservation code if booked through third party", example = "87J2GF")
   private String sourceReservationCode;

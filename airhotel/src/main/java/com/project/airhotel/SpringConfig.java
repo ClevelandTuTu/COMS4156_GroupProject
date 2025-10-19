@@ -31,10 +31,12 @@ public class SpringConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-    // 忽略 /manager/** 和 /api/** 的 CSRF 校验
+    // 忽略 /manager/** 和 /reservations/** 的 CSRF 校验
     RequestMatcher ignoreCsrf = (HttpServletRequest r) -> {
       String path = r.getRequestURI();
-      return path.startsWith("/manager/") || path.startsWith("/api/");
+      return path.startsWith("/manager/")
+          || path.equals("/reservations")
+          || path.startsWith("/reservations/");
     };
 
     return http

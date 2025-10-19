@@ -53,6 +53,7 @@ public class UserReservationService {
     r.setRoom_type_id(req.getRoomTypeId());
     r.setNum_guests(req.getNumGuests());
     r.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
+    r.setPrice_total(req.getPriceTotal());
     core.recalcNightsOrThrow(r, req.getCheckInDate(), req.getCheckOutDate());
     // TODO: 计算并设置 price_total；这里先置 0
     r.setPrice_total(java.math.BigDecimal.ZERO);
