@@ -1,10 +1,10 @@
-package com.project.airhotel.controller;
+package com.project.airhotel.controller.manager;
 
 import com.project.airhotel.dto.reservations.ApplyUpgradeRequest;
 import com.project.airhotel.dto.reservations.ReservationUpdateRequest;
 import com.project.airhotel.model.Reservations;
 import com.project.airhotel.model.enums.ReservationStatus;
-import com.project.airhotel.service.ManagerReservationService;
+import com.project.airhotel.service.manager.ManagerReservationService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;

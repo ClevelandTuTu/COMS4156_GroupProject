@@ -7,7 +7,7 @@ import com.project.airhotel.guard.ManagerEntityGuards;
 import com.project.airhotel.model.Rooms;
 import com.project.airhotel.model.enums.RoomStatus;
 import com.project.airhotel.repository.RoomsRepository;
-import com.project.airhotel.service.ManagerRoomService;
+import com.project.airhotel.service.manager.ManagerRoomService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

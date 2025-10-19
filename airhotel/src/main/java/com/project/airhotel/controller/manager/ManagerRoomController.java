@@ -1,10 +1,10 @@
-package com.project.airhotel.controller;
+package com.project.airhotel.controller.manager;
 
 import com.project.airhotel.dto.rooms.RoomUpdateRequest;
 import com.project.airhotel.dto.rooms.RoomsCreateRequest;
 import com.project.airhotel.model.Rooms;
 import com.project.airhotel.model.enums.RoomStatus;
-import com.project.airhotel.service.ManagerRoomService;
+import com.project.airhotel.service.manager.ManagerRoomService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

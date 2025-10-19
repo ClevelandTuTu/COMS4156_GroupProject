@@ -1,15 +1,15 @@
-package com.project.airhotel.service;
+package com.project.airhotel.service.manager;
 
 import com.project.airhotel.dto.reservations.ApplyUpgradeRequest;
 import com.project.airhotel.dto.reservations.ReservationUpdateRequest;
 import com.project.airhotel.exception.BadRequestException;
 import com.project.airhotel.guard.ManagerEntityGuards;
 import com.project.airhotel.model.Reservations;
-import com.project.airhotel.model.ReservationsStatusHistory;
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
 import com.project.airhotel.repository.ReservationsRepository;
 import com.project.airhotel.repository.ReservationsStatusHistoryRepository;
+import com.project.airhotel.service.core.ReservationCoreService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,15 +25,18 @@ import java.util.List;
 @Transactional
 public class ManagerReservationService {
   private final ReservationsRepository reservationsRepository;
-  private final ReservationsStatusHistoryRepository historyRepository;
+//  private final ReservationsStatusHistoryRepository historyRepository;
   private final ManagerEntityGuards managerEntityGuards;
+  private final ReservationCoreService core;
 
   public ManagerReservationService(ReservationsRepository reservationsRepository,
                                    ReservationsStatusHistoryRepository historyRepository,
-                                   ManagerEntityGuards managerEntityGuards) {
+                                   ManagerEntityGuards managerEntityGuards,
+                                   ReservationCoreService core) {
     this.reservationsRepository = reservationsRepository;
-    this.historyRepository = historyRepository;
+//    this.historyRepository = historyRepository;
     this.managerEntityGuards = managerEntityGuards;
+    this.core = core;
   }
 
   public List<Reservations> listReservations(Long hotelId, ReservationStatus status,
@@ -66,25 +69,20 @@ public class ManagerReservationService {
     if (req.getRoomId() != null) {
       r.setRoom_id(req.getRoomId());
     }
-    if (req.getCheckInDate() != null) {
-      r.setCheck_in_date(req.getCheckInDate());
-    }
-    if (req.getCheckOutDate() != null) {
-      r.setCheck_out_date(req.getCheckOutDate());
+    if (req.getCheckInDate() != null || req.getCheckOutDate() != null) {
+      core.recalcNightsOrThrow(
+          r,
+          req.getCheckInDate() != null ? req.getCheckInDate() : r.getCheck_in_date(),
+          req.getCheckOutDate() != null ? req.getCheckOutDate() : r.getCheck_out_date()
+      );
     }
     if (req.getNumGuests() != null) r.setNum_guests(req.getNumGuests());
     if (req.getCurrency() != null) r.setCurrency(req.getCurrency());
     if (req.getPriceTotal() != null) r.setPrice_total(req.getPriceTotal());
     if (req.getNotes() != null) r.setNotes(req.getNotes());
 
-    if (r.getCheck_in_date() != null && r.getCheck_out_date() != null) {
-      int nights = (int) (r.getCheck_out_date().toEpochDay() - r.getCheck_in_date().toEpochDay());
-      if (nights <= 0) throw new BadRequestException("Check out date must be later than check in date.");
-      r.setNights(nights);
-    }
-
     if (req.getStatus() != null) {
-      changeStatusWithHistory(r, req.getStatus(), null, null);
+      r = core.changeStatus(r, req.getStatus(), null, null);
     }
 
     return reservationsRepository.save(r);
@@ -113,8 +111,7 @@ public class ManagerReservationService {
     if (r.getStatus() == ReservationStatus.CHECKED_IN) {
       return r;
     }
-    changeStatusWithHistory(r, ReservationStatus.CHECKED_IN, null, null);
-    return reservationsRepository.save(r);
+    return core.changeStatus(r, ReservationStatus.CHECKED_IN, null, null);
   }
 
   public Reservations checkOut(Long hotelId, Long reservationId) {
@@ -125,29 +122,11 @@ public class ManagerReservationService {
     if (r.getStatus() == ReservationStatus.CHECKED_OUT) {
       return r;
     }
-    changeStatusWithHistory(r, ReservationStatus.CHECKED_OUT, null, null);
-    return reservationsRepository.save(r);
+    return core.changeStatus(r, ReservationStatus.CHECKED_OUT, null, null);
   }
 
   public void cancel(Long hotelId, Long reservationId, String reason) {
     Reservations r = managerEntityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
-    if (r.getStatus() == ReservationStatus.CANCELED) return;
-    r.setCanceled_at(LocalDateTime.now());
-    changeStatusWithHistory(r, ReservationStatus.CANCELED, reason, null);
-    reservationsRepository.save(r);
-  }
-
-  private void changeStatusWithHistory(Reservations r, ReservationStatus to,
-                                       String reason, Long changedByUserId) {
-    ReservationStatus from = r.getStatus();
-    r.setStatus(to);
-    ReservationsStatusHistory h = new ReservationsStatusHistory();
-    h.setReservation_id(r.getId());
-    h.setFrom_status(from);
-    h.setTo_status(to);
-    h.setChanged_at(LocalDateTime.now());
-    h.setChanged_by_user_id(changedByUserId);
-    h.setReason(reason);
-    historyRepository.save(h);
+    core.cancel(r, reason, null);
   }
 }

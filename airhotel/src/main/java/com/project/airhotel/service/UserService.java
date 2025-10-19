@@ -1,6 +1,6 @@
 package com.project.airhotel.service;
 
-import com.project.airhotel.repository.UserRepository;
+import com.project.airhotel.repository.UsersRepository;
 import com.project.airhotel.model.Users;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +12,9 @@ import java.util.Optional;
  */
 @Service
 public class UserService {
-    private final UserRepository userRepository;
+    private final UsersRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UsersRepository userRepository) {
         this.userRepository = userRepository;
     }
 

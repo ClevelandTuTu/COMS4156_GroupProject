@@ -1,4 +1,4 @@
-package com.project.airhotel.service;
+package com.project.airhotel.service.manager;
 
 import com.project.airhotel.dto.rooms.RoomUpdateRequest;
 import com.project.airhotel.dto.rooms.RoomsCreateRequest;

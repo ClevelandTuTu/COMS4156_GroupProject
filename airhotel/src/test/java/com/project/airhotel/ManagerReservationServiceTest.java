@@ -10,7 +10,8 @@ import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
 import com.project.airhotel.repository.ReservationsRepository;
 import com.project.airhotel.repository.ReservationsStatusHistoryRepository;
-import com.project.airhotel.service.ManagerReservationService;
+import com.project.airhotel.service.manager.ManagerReservationService;
+import com.project.airhotel.service.core.ReservationCoreService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +45,8 @@ public class ManagerReservationServiceTest {
   ReservationsStatusHistoryRepository historyRepository;
   @Mock
   ManagerEntityGuards guards;
+  @Mock
+  ReservationCoreService core;
 
   @InjectMocks
   ManagerReservationService service;

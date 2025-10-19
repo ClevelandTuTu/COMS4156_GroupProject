@@ -11,6 +11,6 @@ import java.util.Optional;
  * @version 1.0.0
  */
 @Repository
-public interface UserRepository extends JpaRepository<Users, Long> {
-    Optional<Users> findTopByOrderByIdAsc();
+public interface UsersRepository extends JpaRepository<Users, Long> {
+    Optional<Users> findByEmail(String email);
 }
