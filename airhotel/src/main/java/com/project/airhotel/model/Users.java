@@ -25,10 +25,15 @@ public class Users {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable=false, length=20)
-    private UserRole role;
+    private UserRole role = UserRole.guest;
 
-    @Column(nullable=false)
-    private Integer phone;
+    @PrePersist
+    void prePersist() {
+        if (role == null) role = UserRole.guest;
+    }
+
+    @Column(nullable=true)
+    private String phone;
 
     @CreationTimestamp
     @Column(nullable=false)
