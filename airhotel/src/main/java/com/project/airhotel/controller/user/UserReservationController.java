@@ -4,6 +4,7 @@ import com.project.airhotel.SpringConfig;
 import com.project.airhotel.dto.reservation.CreateReservationRequest;
 import com.project.airhotel.dto.reservation.PatchReservationRequest;
 import com.project.airhotel.dto.reservation.ReservationDetailResponse;
+import com.project.airhotel.dto.reservation.ReservationSummaryResponse;
 import com.project.airhotel.service.auth.AuthUserService;
 import com.project.airhotel.service.user.UserReservationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +15,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @Validated
@@ -30,13 +33,13 @@ public class UserReservationController {
   }
 
   private Long currentUserId(Authentication auth, HttpServletRequest request) {
-    // 1) 先从 Session 里拿
+    // 1) Take user id from the session first.
     Object v = request.getSession(false) == null ? null
         : request.getSession(false).getAttribute(SpringConfig.SESSION_USER_ID);
     if (v instanceof Long id) {
       return id;
     }
-    // 2) 兜底：从 OAuth2User 取 email，再查/建用户并写回 Session
+    // 2) backup plan: fetch email from OAuth2User, then lookup/create user and write back to Session
     OAuth2User p = (OAuth2User) auth.getPrincipal();
     String email = p.getAttribute("email");
     String name  = p.getAttribute("name");
@@ -45,14 +48,14 @@ public class UserReservationController {
     return userId;
   }
 
-//  @GetMapping
-//  public List<ReservationSummaryResponse> list(Authentication auth,
-//                                               HttpServletRequest request,
-//                                               @RequestParam(defaultValue = "0") int page,
-//                                               @RequestParam(defaultValue = "20") int size) {
-//    return service.listMyReservations(currentUserId(auth, request));
-//  }
+  /** GET /reservations */
+  @GetMapping
+  public List<ReservationSummaryResponse> list(Authentication auth,
+                                               HttpServletRequest request) {
+    return service.listMyReservations(currentUserId(auth, request));
+  }
 
+  /** POST /reservations */
   @PostMapping
   public ResponseEntity<ReservationDetailResponse> create(Authentication auth,
                                                           HttpServletRequest request,
@@ -62,6 +65,7 @@ public class UserReservationController {
         .body(service.createReservation(userId, req));
   }
 
+  /** GET /reservations/{id} */
   @GetMapping("/{id}")
   public ReservationDetailResponse get(Authentication auth,
                                        HttpServletRequest request,
@@ -69,6 +73,7 @@ public class UserReservationController {
     return service.getMyReservation(currentUserId(auth, request), id);
   }
 
+  /** PATCH /reservations/{id} */
   @PatchMapping("/{id}")
   public ReservationDetailResponse patch(Authentication auth,
                                          HttpServletRequest request,
@@ -77,6 +82,7 @@ public class UserReservationController {
     return service.patchMyReservation(currentUserId(auth, request), id, req);
   }
 
+  /** DELETE /reservations/{id} */
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> cancel(Authentication auth,
                                      HttpServletRequest request,
