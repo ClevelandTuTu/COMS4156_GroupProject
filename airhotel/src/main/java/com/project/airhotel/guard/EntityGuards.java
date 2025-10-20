@@ -3,6 +3,7 @@ package com.project.airhotel.guard;
 import com.project.airhotel.exception.BadRequestException;
 import com.project.airhotel.exception.NotFoundException;
 import com.project.airhotel.model.Reservations;
+import com.project.airhotel.model.RoomTypes;
 import com.project.airhotel.model.Rooms;
 import com.project.airhotel.repository.HotelsRepository;
 import com.project.airhotel.repository.ReservationsRepository;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class ManagerEntityGuards {
+public class EntityGuards {
   private final HotelsRepository hotelsRepository;
   private final RoomTypesRepository roomTypesRepository;
   private final ReservationsRepository reservationsRepository;
@@ -26,12 +27,6 @@ public class ManagerEntityGuards {
   public void ensureHotelExists(Long hotelId) {
     if (!hotelsRepository.existsById(hotelId)) {
       throw new NotFoundException("Hotel does not exist: " + hotelId);
-    }
-  }
-
-  public void ensureRoomTypeExists(Long roomTypeId) {
-    if (!roomTypesRepository.existsById(roomTypeId)) {
-      throw new NotFoundException("Room type does not exist: " + roomTypeId);
     }
   }
 
@@ -53,5 +48,21 @@ public class ManagerEntityGuards {
       throw new BadRequestException("This reservation does not belong to this hotel.");
     }
     return r;
+  }
+
+  public void ensureRoomTypeInHotelOrThrow(Long hotelId, Long roomTypeId) {
+    ensureHotelExists(hotelId);
+    RoomTypes rt = roomTypesRepository.findById(roomTypeId)
+        .orElseThrow(() -> new NotFoundException("Room type does not exist: " + roomTypeId));
+    if (!rt.getHotel_id().equals(hotelId)) {
+      throw new BadRequestException("Room type does not belong to hotel " + hotelId);
+    }
+  }
+
+  public void ensureRoomBelongsToHotelAndType(Long hotelId, Long roomId, Long expectedRoomTypeId) {
+    Rooms room = getRoomInHotelOrThrow(hotelId, roomId);
+    if (expectedRoomTypeId != null && !room.getRoom_type_id().equals(expectedRoomTypeId)) {
+      throw new BadRequestException("Room's type does not match expected roomTypeId.");
+    }
   }
 }

@@ -3,12 +3,11 @@ package com.project.airhotel.service.manager;
 import com.project.airhotel.dto.reservations.ApplyUpgradeRequest;
 import com.project.airhotel.dto.reservations.ReservationUpdateRequest;
 import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.guard.ManagerEntityGuards;
+import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.model.Reservations;
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
 import com.project.airhotel.repository.ReservationsRepository;
-import com.project.airhotel.repository.ReservationsStatusHistoryRepository;
 import com.project.airhotel.service.core.ReservationCoreService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,23 +24,20 @@ import java.util.List;
 @Transactional
 public class ManagerReservationService {
   private final ReservationsRepository reservationsRepository;
-//  private final ReservationsStatusHistoryRepository historyRepository;
-  private final ManagerEntityGuards managerEntityGuards;
+  private final EntityGuards entityGuards;
   private final ReservationCoreService core;
 
   public ManagerReservationService(ReservationsRepository reservationsRepository,
-                                   ReservationsStatusHistoryRepository historyRepository,
-                                   ManagerEntityGuards managerEntityGuards,
+                                   EntityGuards entityGuards,
                                    ReservationCoreService core) {
     this.reservationsRepository = reservationsRepository;
-//    this.historyRepository = historyRepository;
-    this.managerEntityGuards = managerEntityGuards;
+    this.entityGuards = entityGuards;
     this.core = core;
   }
 
   public List<Reservations> listReservations(Long hotelId, ReservationStatus status,
                                              LocalDate start, LocalDate end) {
-    managerEntityGuards.ensureHotelExists(hotelId);
+    entityGuards.ensureHotelExists(hotelId);
     boolean hasDates = (start != null && end != null);
     if (status != null && hasDates) {
       return reservationsRepository.findByHotelIdAndStatusAndStayRange(hotelId, status, start, end);
@@ -56,17 +52,18 @@ public class ManagerReservationService {
   }
 
   public Reservations getReservation(Long hotelId, Long reservationId) {
-    return managerEntityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
+    return entityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
   }
 
   public Reservations patchReservation(Long hotelId, Long reservationId, ReservationUpdateRequest req) {
-    Reservations r = managerEntityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
+    Reservations r = entityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
 
     if (req.getRoomTypeId() != null) {
-      managerEntityGuards.ensureRoomTypeExists(req.getRoomTypeId());
+      entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
       r.setRoom_type_id(req.getRoomTypeId());
     }
     if (req.getRoomId() != null) {
+      entityGuards.ensureRoomBelongsToHotelAndType(hotelId, req.getRoomId(), r.getRoom_type_id());
       r.setRoom_id(req.getRoomId());
     }
     if (req.getCheckInDate() != null || req.getCheckOutDate() != null) {
@@ -89,8 +86,8 @@ public class ManagerReservationService {
   }
 
   public Reservations applyUpgrade(Long hotelId, Long reservationId, ApplyUpgradeRequest req) {
-    Reservations r = managerEntityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
-    managerEntityGuards.ensureRoomTypeExists(req.getNewRoomTypeId());
+    Reservations r = entityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
+    entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getNewRoomTypeId());
 
     if (r.getUpgrade_status() != UpgradeStatus.ELIGIBLE && r.getUpgrade_status() != UpgradeStatus.APPLIED) {
       throw new BadRequestException("You cannot upgrade this reservation because the status is "
@@ -104,7 +101,7 @@ public class ManagerReservationService {
   }
 
   public Reservations checkIn(Long hotelId, Long reservationId) {
-    Reservations r = managerEntityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
+    Reservations r = entityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
     if (r.getStatus() == ReservationStatus.CANCELED) {
       throw new BadRequestException("Reservation has already been cancelled.");
     }
@@ -115,7 +112,7 @@ public class ManagerReservationService {
   }
 
   public Reservations checkOut(Long hotelId, Long reservationId) {
-    Reservations r = managerEntityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
+    Reservations r = entityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
     if (r.getStatus() == ReservationStatus.CANCELED) {
       throw new BadRequestException("Reservation has already been cancelled.");
     }
@@ -126,7 +123,7 @@ public class ManagerReservationService {
   }
 
   public void cancel(Long hotelId, Long reservationId, String reason) {
-    Reservations r = managerEntityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
+    Reservations r = entityGuards.getReservationInHotelOrThrow(hotelId, reservationId);
     core.cancel(r, reason, null);
   }
 }
