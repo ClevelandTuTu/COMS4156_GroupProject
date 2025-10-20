@@ -3,7 +3,7 @@ package com.project.airhotel.service.manager;
 import com.project.airhotel.dto.rooms.RoomUpdateRequest;
 import com.project.airhotel.dto.rooms.RoomsCreateRequest;
 import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.guard.ManagerEntityGuards;
+import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.model.Rooms;
 import com.project.airhotel.model.enums.RoomStatus;
 import com.project.airhotel.repository.RoomsRepository;
@@ -20,16 +20,16 @@ import java.util.List;
 @Transactional
 public class ManagerRoomService {
   private final RoomsRepository roomsRepository;
-  private final ManagerEntityGuards managerEntityGuards;
+  private final EntityGuards entityGuards;
 
   public ManagerRoomService(RoomsRepository roomsRepository,
-                            ManagerEntityGuards managerEntityGuards) {
+                            EntityGuards entityGuards) {
     this.roomsRepository = roomsRepository;
-    this.managerEntityGuards = managerEntityGuards;
+    this.entityGuards = entityGuards;
   }
 
   public List<Rooms> listRooms(Long hotelId, RoomStatus status) {
-    managerEntityGuards.ensureHotelExists(hotelId);
+    entityGuards.ensureHotelExists(hotelId);
     if (status != null) {
       return roomsRepository.findByHotelIdAndStatus(hotelId, status);
     }
@@ -37,8 +37,8 @@ public class ManagerRoomService {
   }
 
   public Rooms createRoom(Long hotelId, RoomsCreateRequest req) {
-    managerEntityGuards.ensureHotelExists(hotelId);
-    managerEntityGuards.ensureRoomTypeExists(req.getRoomTypeId());
+    entityGuards.ensureHotelExists(hotelId);
+    entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
     if (roomsRepository.existsByHotelIdAndRoomNumber(hotelId, req.getRoomNumber())
     ) {
       throw new BadRequestException("Room number already exists: " + req.getRoomNumber());
@@ -53,10 +53,10 @@ public class ManagerRoomService {
   }
 
   public Rooms updateRoom(Long hotelId, Long roomId, RoomUpdateRequest req) {
-    Rooms r = managerEntityGuards.getRoomInHotelOrThrow(hotelId, roomId);
+    Rooms r = entityGuards.getRoomInHotelOrThrow(hotelId, roomId);
 
     if (req.getRoomTypeId() != null) {
-      managerEntityGuards.ensureRoomTypeExists(req.getRoomTypeId());
+      entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
       r.setRoom_type_id(req.getRoomTypeId());
     }
     if (req.getRoomNumber() != null) {
@@ -72,7 +72,7 @@ public class ManagerRoomService {
   }
 
   public void deleteRoom(Long hotelId, Long roomId) {
-    Rooms r = managerEntityGuards.getRoomInHotelOrThrow(hotelId, roomId);
+    Rooms r = entityGuards.getRoomInHotelOrThrow(hotelId, roomId);
     roomsRepository.deleteById(r.getId());
   }
 }

@@ -3,7 +3,7 @@ package com.project.airhotel;
 import com.project.airhotel.dto.reservations.ApplyUpgradeRequest;
 import com.project.airhotel.dto.reservations.ReservationUpdateRequest;
 import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.guard.ManagerEntityGuards;
+import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.model.Reservations;
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
@@ -23,18 +23,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Ziyang Su
@@ -48,7 +39,7 @@ public class ManagerReservationServiceTest {
   @Mock
   ReservationsStatusHistoryRepository historyRepository;
   @Mock
-  ManagerEntityGuards guards;
+  EntityGuards guards;
   @Mock
   ReservationCoreService core;
 
@@ -105,8 +96,7 @@ public class ManagerReservationServiceTest {
 
   @Test
   void listReservations_all() {
-    when(reservationsRepository.findByHotelId(1L))
-        .thenReturn(List.of(sampleRes));
+    when(reservationsRepository.findByHotelId(1L)).thenReturn(List.of(sampleRes));
 
     var list = service.listReservations(1L, null, null, null);
 
@@ -211,7 +201,7 @@ public class ManagerReservationServiceTest {
   void applyUpgrade_ok() {
     sampleRes.setUpgrade_status(UpgradeStatus.ELIGIBLE);
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
-    doNothing().when(guards).ensureRoomTypeExists(99L);
+    doNothing().when(guards).ensureRoomTypeInHotelOrThrow(1L, 99L);
     when(reservationsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     var req = new ApplyUpgradeRequest();
@@ -227,7 +217,7 @@ public class ManagerReservationServiceTest {
   void applyUpgrade_alreadyApplied_noThrow_andIdempotent() {
     sampleRes.setUpgrade_status(UpgradeStatus.APPLIED);
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
-    doNothing().when(guards).ensureRoomTypeExists(99L);
+    doNothing().when(guards).ensureRoomTypeInHotelOrThrow(1L, 99L);
     when(reservationsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     var req = new ApplyUpgradeRequest();

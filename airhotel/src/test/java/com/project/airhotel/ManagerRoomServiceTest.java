@@ -3,7 +3,7 @@ package com.project.airhotel;
 import com.project.airhotel.dto.rooms.RoomUpdateRequest;
 import com.project.airhotel.dto.rooms.RoomsCreateRequest;
 import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.guard.ManagerEntityGuards;
+import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.model.Rooms;
 import com.project.airhotel.model.enums.RoomStatus;
 import com.project.airhotel.repository.RoomsRepository;
@@ -17,12 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Ziyang Su
@@ -34,7 +31,7 @@ public class ManagerRoomServiceTest {
   @Mock
   RoomsRepository roomsRepository;
   @Mock
-  ManagerEntityGuards guards;
+  EntityGuards guards;
 
   @InjectMocks
   ManagerRoomService service;
@@ -82,7 +79,7 @@ public class ManagerRoomServiceTest {
   @Test
   void createRoom_ok() {
     doNothing().when(guards).ensureHotelExists(1L);
-    doNothing().when(guards).ensureRoomTypeExists(10L);
+    doNothing().when(guards).ensureRoomTypeInHotelOrThrow(1L, 10L);
     when(roomsRepository.existsByHotelIdAndRoomNumber(1L, "1808")).thenReturn(false);
     when(roomsRepository.save(any())).thenAnswer(inv -> {
       Rooms r = inv.getArgument(0);
@@ -105,7 +102,7 @@ public class ManagerRoomServiceTest {
   @Test
   void createRoom_duplicateNumber_throw() {
     doNothing().when(guards).ensureHotelExists(1L);
-    doNothing().when(guards).ensureRoomTypeExists(10L);
+    doNothing().when(guards).ensureRoomTypeInHotelOrThrow(1L, 10L);
     when(roomsRepository.existsByHotelIdAndRoomNumber(1L, "1808")).thenReturn(true);
 
     var req = new RoomsCreateRequest();
@@ -123,7 +120,7 @@ public class ManagerRoomServiceTest {
   void updateRoom_ok() {
     when(guards.getRoomInHotelOrThrow(1L, 200L)).thenReturn(room);
 
-    doNothing().when(guards).ensureRoomTypeExists(11L);
+    doNothing().when(guards).ensureRoomTypeInHotelOrThrow(1L, 11L);
     when(roomsRepository.existsByHotelIdAndRoomNumber(1L, "1901")).thenReturn(false);
     when(roomsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
