@@ -108,7 +108,7 @@ class UserReservationServiceTest {
     req.setCheckOutDate(LocalDate.of(2025, 12, 4));
     req.setNumGuests(3);
     req.setCurrency(null); // although DTO validates non-null, service fallback branch should still be covered by test
-    req.setPriceTotal(new BigDecimal("999.99")); // will be overridden to ZERO
+    req.setPriceTotal(new BigDecimal("999.99"));
 
     // We will let core set nights on the same instance and return it
     Mockito.doAnswer(inv -> {
@@ -128,7 +128,7 @@ class UserReservationServiceTest {
     saved.setNights(3);
     saved.setNum_guests(3);
     saved.setCurrency("USD"); // fallback applied
-    saved.setPrice_total(BigDecimal.ZERO);
+    saved.setPrice_total(new BigDecimal("999.99"));
 
     when(reservationsRepository.save(any(Reservations.class))).thenReturn(saved);
 
@@ -141,7 +141,7 @@ class UserReservationServiceTest {
     ArgumentCaptor<Reservations> captor = ArgumentCaptor.forClass(Reservations.class);
     verify(reservationsRepository, atLeastOnce()).save(captor.capture());
     Reservations finalSaved = captor.getValue();
-    assertEquals(BigDecimal.ZERO, finalSaved.getPrice_total());
+    assertEquals(0, finalSaved.getPrice_total().compareTo(new BigDecimal("999.99")));
     assertEquals("USD", finalSaved.getCurrency(), "should fallback to USD when null in request");
 
     // Response reflects saved entity
@@ -149,7 +149,7 @@ class UserReservationServiceTest {
     assertEquals(3, out.getNights());
     assertEquals(ReservationStatus.PENDING, out.getStatus());
     assertEquals("USD", out.getCurrency());
-    assertEquals(BigDecimal.ZERO, out.getPriceTotal());
+    assertEquals(0, out.getPriceTotal().compareTo(new BigDecimal("999.99")));
   }
 
   @Test

@@ -52,9 +52,15 @@ public class UserReservationService {
     r.setNum_guests(req.getNumGuests());
     r.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
     r.setPrice_total(req.getPriceTotal());
+
+    // Calculate nights & write date
     core.recalcNightsOrThrow(r, req.getCheckInDate(), req.getCheckOutDate());
+
+    // inventory verification + deduction
+    core.reserveInventoryOrThrow(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
+
     // TODO: 计算并设置 price_total；这里先置 0
-    r.setPrice_total(java.math.BigDecimal.ZERO);
+//    r.setPrice_total(java.math.BigDecimal.ZERO);
     Reservations saved = reservationsRepository.save(r);
     return mapper.toDetail(saved);
   }
