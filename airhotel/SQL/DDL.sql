@@ -5,9 +5,9 @@
 CREATE TABLE if not exists users (
                        id           BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                        email        VARCHAR(255) NOT NULL,
-                       name         VARCHAR(120) NOT NULL,
-                       role         ENUM('guest','manager','admin') NOT NULL,
-                       phone        INT NOT NULL,
+                       name         VARCHAR(120) NOT NULL DEFAULT 'Guest',
+                       role         ENUM('guest','manager','admin') NOT NULL DEFAULT 'guest',
+                       phone        VARCHAR(50) NULL,
                        created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
                        updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                        UNIQUE KEY uq_users_email (email)

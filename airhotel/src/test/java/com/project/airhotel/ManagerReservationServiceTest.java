@@ -5,12 +5,12 @@ import com.project.airhotel.dto.reservations.ReservationUpdateRequest;
 import com.project.airhotel.exception.BadRequestException;
 import com.project.airhotel.guard.ManagerEntityGuards;
 import com.project.airhotel.model.Reservations;
-import com.project.airhotel.model.ReservationsStatusHistory;
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
 import com.project.airhotel.repository.ReservationsRepository;
 import com.project.airhotel.repository.ReservationsStatusHistoryRepository;
-import com.project.airhotel.service.ManagerReservationService;
+import com.project.airhotel.service.manager.ManagerReservationService;
+import com.project.airhotel.service.core.ReservationCoreService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,12 +20,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -44,6 +49,8 @@ public class ManagerReservationServiceTest {
   ReservationsStatusHistoryRepository historyRepository;
   @Mock
   ManagerEntityGuards guards;
+  @Mock
+  ReservationCoreService core;
 
   @InjectMocks
   ManagerReservationService service;
@@ -127,6 +134,18 @@ public class ManagerReservationServiceTest {
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
     when(reservationsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+    when(core.recalcNightsOrThrow(any(Reservations.class), any(LocalDate.class), any(LocalDate.class)))
+        .thenAnswer(inv -> {
+          Reservations r = inv.getArgument(0);
+          LocalDate cin = inv.getArgument(1);
+          LocalDate cout = inv.getArgument(2);
+          int nights = (int) (cout.toEpochDay() - cin.toEpochDay());
+          r.setCheck_in_date(cin);
+          r.setCheck_out_date(cout);
+          r.setNights(nights);
+          return r;
+        });
+
     var req = new ReservationUpdateRequest();
     req.setCheckInDate(LocalDate.of(2025, 10, 20));
     req.setCheckOutDate(LocalDate.of(2025, 10, 23));
@@ -141,11 +160,17 @@ public class ManagerReservationServiceTest {
     assertThat(updated.getNum_guests()).isEqualTo(3);
     assertThat(updated.getPrice_total()).isEqualByComparingTo("300.00");
     assertThat(updated.getNotes()).isEqualTo("late arrival");
+
+    verify(core).recalcNightsOrThrow(eq(sampleRes), eq(LocalDate.of(2025, 10, 20)), eq(LocalDate.of(2025, 10, 23)));
+    verify(reservationsRepository, atLeastOnce()).save(any());
   }
 
   @Test
   void patchReservation_invalidDates_throwBadRequest() {
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
+
+    when(core.recalcNightsOrThrow(any(Reservations.class), any(LocalDate.class), any(LocalDate.class)))
+        .thenThrow(new BadRequestException("Check out date must be later than check in date."));
 
     var req = new ReservationUpdateRequest();
     req.setCheckInDate(LocalDate.of(2025, 10, 22));
@@ -154,12 +179,22 @@ public class ManagerReservationServiceTest {
     assertThatThrownBy(() -> service.patchReservation(1L, 100L, req))
         .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("Check out date must be later");
+
+    verify(core).recalcNightsOrThrow(eq(sampleRes), eq(LocalDate.of(2025, 10, 22)), eq(LocalDate.of(2025, 10, 22)));
+    verify(reservationsRepository, never()).save(any());
   }
 
   @Test
-  void patchReservation_changeStatus_writesHistory() {
+  void patchReservation_changeStatus_writesHistory_via_core() {
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
     when(reservationsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    when(core.changeStatus(any(Reservations.class), eq(ReservationStatus.CONFIRMED), any(), any()))
+        .thenAnswer(inv -> {
+          Reservations r = inv.getArgument(0);
+          r.setStatus(ReservationStatus.CONFIRMED);
+          return r;
+        });
 
     var req = new ReservationUpdateRequest();
     req.setStatus(ReservationStatus.CONFIRMED);
@@ -167,7 +202,7 @@ public class ManagerReservationServiceTest {
     var updated = service.patchReservation(1L, 100L, req);
 
     assertThat(updated.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
-    verify(historyRepository).save(any(ReservationsStatusHistory.class));
+    verify(core).changeStatus(eq(sampleRes), eq(ReservationStatus.CONFIRMED), isNull(), isNull());
   }
 
   // ---------- applyUpgrade ----------
@@ -212,12 +247,19 @@ public class ManagerReservationServiceTest {
   void checkIn_ok() {
     sampleRes.setStatus(ReservationStatus.CONFIRMED);
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
-    when(reservationsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    when(core.changeStatus(any(Reservations.class), eq(ReservationStatus.CHECKED_IN), any(), any()))
+        .thenAnswer(inv -> {
+          Reservations r = inv.getArgument(0);
+          r.setStatus(ReservationStatus.CHECKED_IN);
+          return r;
+        });
 
     var r = service.checkIn(1L, 100L);
 
     assertThat(r.getStatus()).isEqualTo(ReservationStatus.CHECKED_IN);
-    verify(historyRepository).save(any(ReservationsStatusHistory.class));
+    verify(core).changeStatus(eq(sampleRes), eq(ReservationStatus.CHECKED_IN), isNull(), isNull());
+    verify(reservationsRepository, never()).save(any());
   }
 
   @Test
@@ -248,12 +290,19 @@ public class ManagerReservationServiceTest {
   void checkOut_ok() {
     sampleRes.setStatus(ReservationStatus.CONFIRMED);
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
-    when(reservationsRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    when(core.changeStatus(any(Reservations.class), eq(ReservationStatus.CHECKED_OUT), any(), any()))
+        .thenAnswer(inv -> {
+          Reservations r = inv.getArgument(0);
+          r.setStatus(ReservationStatus.CHECKED_OUT);
+          return r;
+        });
 
     var r = service.checkOut(1L, 100L);
 
     assertThat(r.getStatus()).isEqualTo(ReservationStatus.CHECKED_OUT);
-    verify(historyRepository).save(any(ReservationsStatusHistory.class));
+    verify(core).changeStatus(eq(sampleRes), eq(ReservationStatus.CHECKED_OUT), isNull(), isNull());
+    verify(reservationsRepository, never()).save(any());
   }
 
   @Test
@@ -284,11 +333,17 @@ public class ManagerReservationServiceTest {
     sampleRes.setStatus(ReservationStatus.CONFIRMED);
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
 
+    doAnswer(inv -> {
+      Reservations r = inv.getArgument(0);
+      r.setCanceled_at(LocalDateTime.now());
+      return null;
+    }).when(core).cancel(eq(sampleRes), eq("guest request"), isNull());
+
     service.cancel(1L, 100L, "guest request");
 
     assertThat(sampleRes.getCanceled_at()).isNotNull();
-    verify(historyRepository).save(any(ReservationsStatusHistory.class));
-    verify(reservationsRepository).save(sampleRes);
+    verify(core).cancel(eq(sampleRes), eq("guest request"), isNull());
+    verify(reservationsRepository, never()).save(any());
   }
 
   @Test
@@ -296,7 +351,11 @@ public class ManagerReservationServiceTest {
     sampleRes.setStatus(ReservationStatus.CANCELED);
     when(guards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(sampleRes);
 
+    doNothing().when(core).cancel(eq(sampleRes), eq("again"), isNull());
+
     service.cancel(1L, 100L, "again");
+
+    verify(core).cancel(eq(sampleRes), eq("again"), isNull());
 
     verify(historyRepository, never()).save(any());
     verify(reservationsRepository, never()).save(any());

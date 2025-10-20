@@ -43,4 +43,10 @@ public interface ReservationsRepository extends JpaRepository<Reservations, Long
                                                         @Param("status") ReservationStatus status,
                                                         @Param("start") LocalDate start,
                                                         @Param("end") LocalDate end);
+
+  @Query("SELECT r FROM Reservations r WHERE r.user_id = :userId")
+  List<Reservations> findByUserId(@Param("userId") Long userId);
+
+  @Query("SELECT r FROM Reservations r WHERE r.id = :id AND r.user_id = :userId")
+  java.util.Optional<Reservations> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 }
