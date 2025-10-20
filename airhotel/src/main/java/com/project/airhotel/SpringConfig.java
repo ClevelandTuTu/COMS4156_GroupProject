@@ -3,6 +3,7 @@ package com.project.airhotel;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -10,6 +11,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import com.project.airhotel.service.auth.AuthUserService;
 
 @Configuration
+@Profile("!dev")
 public class SpringConfig {
 
   public static final String SESSION_USER_ID = "USER_ID";
