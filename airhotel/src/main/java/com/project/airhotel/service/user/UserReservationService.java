@@ -47,7 +47,7 @@ public class UserReservationService {
     List<Reservations> list = reservationsRepository.findByUserId(userId);
     return list.stream()
         .map(mapper::toSummary)
-        .collect(java.util.stream.Collectors.toList()); // JDK 16+ 可用 .toList()
+        .collect(java.util.stream.Collectors.toList());
   }
 
   public ReservationDetailResponse getMyReservation(Long userId, Long id) {
@@ -56,9 +56,10 @@ public class UserReservationService {
     return mapper.toDetail(r);
   }
 
+  // TODO: refactor reservation creation and update to Inventory Service, because these code are used by manager reservation service
   @Transactional
   public ReservationDetailResponse createReservation(Long userId, CreateReservationRequest req) {
-    // TODO: 价格/库存校验与 nightlyPrices 构建可在 core 中扩展
+    // TODO: calculate total prices instead of take it from input
     entityGuards.ensureHotelExists(req.getHotelId());
     entityGuards.ensureRoomTypeInHotelOrThrow(req.getHotelId(), req.getRoomTypeId());
 
@@ -75,6 +76,7 @@ public class UserReservationService {
     r.setRoom_type_id(req.getRoomTypeId());
     r.setNum_guests(req.getNumGuests());
     r.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
+    // TODO: do calculation rather than take from input
     r.setPrice_total(req.getPriceTotal());
 
     // Calculate nights & write date
@@ -83,8 +85,6 @@ public class UserReservationService {
     // inventory verification + deduction
     inventoryService.reserveRangeOrThrow(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
 
-    // TODO: 计算并设置 price_total；这里先置 0
-//    r.setPrice_total(java.math.BigDecimal.ZERO);
     Reservations saved = reservationsRepository.save(r);
     return mapper.toDetail(saved);
   }
@@ -99,10 +99,11 @@ public class UserReservationService {
       var newCheckIn = req.getCheckInDate() != null ? req.getCheckInDate() : r.getCheck_in_date();
       var newCheckOut = req.getCheckOutDate() != null ? req.getCheckOutDate() : r.getCheck_out_date();
       nightsService.recalcNightsOrThrow(r, newCheckIn, newCheckOut);
-      // TODO: 重新计算 nightlyPrices & price_total
+      // TODO: recalculate nightlyPrices & price_total
       inventoryService.reserveRangeOrThrow(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
     }
     if (req.getNumGuests() != null) {
+      // TODO: check number of guest is lower than the capacity of the room type
       if (req.getNumGuests() <= 0) {
         throw new BadRequestException("numGuests must be positive.");
       }

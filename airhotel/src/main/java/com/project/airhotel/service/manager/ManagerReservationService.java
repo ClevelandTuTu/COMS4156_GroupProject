@@ -75,11 +75,11 @@ public class ManagerReservationService {
 
     if (needChangeRoomType) {
       entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
-      // 释放旧库存
+      // release inventory of old stayed range
       inventoryService.releaseRange(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
-      // 改房型
+      // change room id
       r.setRoom_type_id(req.getRoomTypeId());
-      // 预占新库存（先不改日期，仍旧用原日期范围）
+      // pre-occupy inventory of new stayed range
       inventoryService.reserveRangeOrThrow(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
     }
 

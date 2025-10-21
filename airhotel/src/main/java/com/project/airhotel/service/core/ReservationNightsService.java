@@ -12,7 +12,6 @@ import java.time.LocalDate;
  */
 @Service
 public class ReservationNightsService {
-  // todo: 价格/库存后续可在此处扩展
   public Reservations recalcNightsOrThrow(Reservations r, LocalDate checkIn, LocalDate checkOut) {
     if (checkIn == null || checkOut == null) {
       throw new BadRequestException("Check-in and check-out dates are required.");

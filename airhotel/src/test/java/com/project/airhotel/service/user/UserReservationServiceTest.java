@@ -9,13 +9,11 @@ import com.project.airhotel.exception.NotFoundException;
 import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.mapper.ReservationMapper;
 import com.project.airhotel.model.Reservations;
-import com.project.airhotel.model.enums.ReservationStatus;
-import com.project.airhotel.model.enums.UpgradeStatus;
 import com.project.airhotel.repository.ReservationsRepository;
 import com.project.airhotel.service.core.ReservationInventoryService;
 import com.project.airhotel.service.core.ReservationNightsService;
 import com.project.airhotel.service.core.ReservationOrchestrator;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -23,229 +21,380 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for UserReservationService.
+ * Each test states which method & which branch is being exercised.
+ */
 @ExtendWith(MockitoExtension.class)
 class UserReservationServiceTest {
 
-  @Mock ReservationsRepository reservationsRepository;
-  @Mock ReservationNightsService nightsService;
-  @Mock ReservationInventoryService inventoryService;
-  @Mock ReservationOrchestrator orchestrator;
-  @Mock EntityGuards entityGuards;
+  @Mock private ReservationsRepository reservationsRepository;
+  @Mock private ReservationNightsService nightsService;
+  @Mock private ReservationInventoryService inventoryService;
+  @Mock private ReservationOrchestrator orchestrator;
+  @Mock private ReservationMapper mapper;
+  @Mock private EntityGuards entityGuards;
 
-  ReservationMapper mapper = new ReservationMapper();
+  @InjectMocks
+  private UserReservationService service;
 
-  @InjectMocks UserReservationService service;
-
-  @BeforeEach
-  void init() {
-    service = new UserReservationService(reservationsRepository, nightsService, inventoryService, orchestrator, mapper, entityGuards);
-  }
-
-  private Reservations makeReservationEntity(Long id) {
+  // ---------- Helpers ----------
+  private Reservations baseReservation() {
     Reservations r = new Reservations();
-    r.setId(id);
-    r.setStatus(ReservationStatus.PENDING);
-    r.setUpgrade_status(UpgradeStatus.NOT_ELIGIBLE);
-    r.setCheck_in_date(LocalDate.of(2025, 11, 1));
-    r.setCheck_out_date(LocalDate.of(2025, 11, 3));
-    r.setNights(2);
+    r.setId(100L);
+    r.setUser_id(9L);
+    r.setHotel_id(1L);
+    r.setRoom_type_id(11L);
     r.setNum_guests(2);
     r.setCurrency("USD");
-    r.setPrice_total(new BigDecimal("123.45"));
-    r.setCreated_at(LocalDateTime.of(2025, 10, 1, 12, 0));
+    r.setCheck_in_date(LocalDate.of(2025, 10, 20));
+    r.setCheck_out_date(LocalDate.of(2025, 10, 22));
+    r.setNights(2);
     return r;
   }
 
+  // ========================= listMyReservations =========================
+
   @Test
-  void listMyReservations_mapsEntitiesToSummaries() {
-    Reservations r = makeReservationEntity(10L);
-    when(reservationsRepository.findByUserId(1L)).thenReturn(List.of(r));
+  @DisplayName("listMyReservations → branch: repository returns empty list")
+  void listMyReservations_empty() {
+    // Testing method: listMyReservations; branch: empty result mapping
+    Long userId = 9L;
+    when(reservationsRepository.findByUserId(userId)).thenReturn(List.of());
 
-    List<ReservationSummaryResponse> list = service.listMyReservations(1L);
+    List<ReservationSummaryResponse> out = service.listMyReservations(userId);
 
-    assertEquals(1, list.size());
-    ReservationSummaryResponse s = list.get(0);
-    assertEquals(10L, s.getId());
-    assertEquals(ReservationStatus.PENDING, s.getStatus());
-    assertEquals(2, s.getNights());
-    assertEquals(2, s.getNumGuests());
-    assertEquals(new BigDecimal("123.45"), s.getPriceTotal());
-    assertNotNull(s.getCreatedAt(), "createdAt should be mapped when present");
+    assertNotNull(out);
+    assertTrue(out.isEmpty());
+    verify(mapper, never()).toSummary(any());
   }
 
   @Test
-  void getMyReservation_found_returnsDetail() {
-    Reservations r = makeReservationEntity(22L);
-    when(reservationsRepository.findByIdAndUserId(22L, 5L)).thenReturn(Optional.of(r));
+  @DisplayName("listMyReservations → branch: repository returns non-empty list (mapping order)")
+  void listMyReservations_nonEmpty() {
+    // Testing method: listMyReservations; branch: non-empty mapping
+    Long userId = 9L;
+    Reservations r1 = new Reservations(); r1.setId(1L);
+    Reservations r2 = new Reservations(); r2.setId(2L);
+    when(reservationsRepository.findByUserId(userId)).thenReturn(List.of(r1, r2));
 
-    ReservationDetailResponse d = service.getMyReservation(5L, 22L);
+    ReservationSummaryResponse s1 = mock(ReservationSummaryResponse.class);
+    ReservationSummaryResponse s2 = mock(ReservationSummaryResponse.class);
+    when(mapper.toSummary(r1)).thenReturn(s1);
+    when(mapper.toSummary(r2)).thenReturn(s2);
 
-    assertEquals(22L, d.getId());
-    assertEquals(ReservationStatus.PENDING, d.getStatus());
-    assertEquals("USD", d.getCurrency());
-    assertEquals(new BigDecimal("123.45"), d.getPriceTotal());
-    assertEquals(2, d.getNights());
+    List<ReservationSummaryResponse> out = service.listMyReservations(userId);
+
+    assertEquals(List.of(s1, s2), out);
+    verify(mapper, times(1)).toSummary(r1);
+    verify(mapper, times(1)).toSummary(r2);
+  }
+
+  // ========================= getMyReservation =========================
+
+  @Test
+  @DisplayName("getMyReservation → branch: reservation exists")
+  void getMyReservation_exists() {
+    // Testing method: getMyReservation; branch: found
+    Long userId = 9L, id = 100L;
+    Reservations r = baseReservation();
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.of(r));
+
+    ReservationDetailResponse detail = mock(ReservationDetailResponse.class);
+    when(mapper.toDetail(r)).thenReturn(detail);
+
+    ReservationDetailResponse out = service.getMyReservation(userId, id);
+
+    assertSame(detail, out);
+    verify(mapper, times(1)).toDetail(r);
   }
 
   @Test
-  void getMyReservation_notFound_throws() {
-    when(reservationsRepository.findByIdAndUserId(9L, 3L)).thenReturn(Optional.empty());
-    assertThrows(NotFoundException.class, () -> service.getMyReservation(3L, 9L));
+  @DisplayName("getMyReservation → branch: reservation not found (throws NotFoundException)")
+  void getMyReservation_notFound() {
+    // Testing method: getMyReservation; branch: not found -> throws
+    Long userId = 9L, id = 404L;
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.empty());
+
+    assertThrows(NotFoundException.class, () -> service.getMyReservation(userId, id));
+    verify(mapper, never()).toDetail(any());
+  }
+
+  // ========================= createReservation =========================
+
+  @Test
+  @DisplayName("createReservation → branch: numGuests is null (throws BadRequestException)")
+  void createReservation_numGuestsNull_throws() {
+    // Testing method: createReservation; branch: validation numGuests == null
+    Long userId = 9L;
+    CreateReservationRequest req = mock(CreateReservationRequest.class);
+    when(req.getHotelId()).thenReturn(1L);
+    when(req.getRoomTypeId()).thenReturn(11L);
+    when(req.getNumGuests()).thenReturn(null);
+
+    // guards are called first
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 11L);
+
+    assertThrows(BadRequestException.class, () -> service.createReservation(userId, req));
+
+    verifyNoInteractions(nightsService, inventoryService, reservationsRepository, mapper);
   }
 
   @Test
-  void createReservation_callsNightsAndInventory_andSaves() {
-    CreateReservationRequest req = new CreateReservationRequest();
-    req.setHotelId(1L);
-    req.setRoomTypeId(2L);
-    req.setCheckInDate(LocalDate.of(2025, 12, 1));
-    req.setCheckOutDate(LocalDate.of(2025, 12, 4));
-    req.setNumGuests(3);
-    req.setCurrency(null);
-    req.setPriceTotal(new BigDecimal("999.99"));
+  @DisplayName("createReservation → branch: numGuests <= 0 (throws BadRequestException)")
+  void createReservation_numGuestsNonPositive_throws() {
+    // Testing method: createReservation; branch: validation numGuests <= 0
+    Long userId = 9L;
+    CreateReservationRequest req = mock(CreateReservationRequest.class);
+    when(req.getHotelId()).thenReturn(1L);
+    when(req.getRoomTypeId()).thenReturn(11L);
+    when(req.getNumGuests()).thenReturn(0);
 
     doNothing().when(entityGuards).ensureHotelExists(1L);
-    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 2L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 11L);
 
-    Mockito.doAnswer(inv -> {
-      Reservations r = inv.getArgument(0);
-      r.setCheck_in_date(req.getCheckInDate());
-      r.setCheck_out_date(req.getCheckOutDate());
-      r.setNights(3);
-      return r;
-    }).when(nightsService).recalcNightsOrThrow(any(Reservations.class), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
-
-    doNothing().when(inventoryService).reserveRangeOrThrow(eq(1L), eq(2L), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
-
-    Reservations saved = new Reservations();
-    saved.setId(777L);
-    saved.setStatus(ReservationStatus.PENDING);
-    saved.setUpgrade_status(UpgradeStatus.NOT_ELIGIBLE);
-    saved.setCheck_in_date(req.getCheckInDate());
-    saved.setCheck_out_date(req.getCheckOutDate());
-    saved.setNights(3);
-    saved.setNum_guests(3);
-    saved.setCurrency("USD"); // fallback
-    saved.setPrice_total(new BigDecimal("999.99"));
-
-    when(reservationsRepository.save(any(Reservations.class))).thenReturn(saved);
-
-    ReservationDetailResponse out = service.createReservation(9L, req);
-
-    verify(entityGuards).ensureHotelExists(1L);
-    verify(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 2L);
-    verify(nightsService).recalcNightsOrThrow(any(Reservations.class), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
-    verify(inventoryService).reserveRangeOrThrow(eq(1L), eq(2L), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
-    verify(reservationsRepository, atLeastOnce()).save(any());
-
-    assertEquals(777L, out.getId());
-    assertEquals(3, out.getNights());
-    assertEquals(ReservationStatus.PENDING, out.getStatus());
-    assertEquals("USD", out.getCurrency());
-    assertEquals(0, out.getPriceTotal().compareTo(new BigDecimal("999.99")));
+    assertThrows(BadRequestException.class, () -> service.createReservation(userId, req));
+    verifyNoInteractions(nightsService, inventoryService, reservationsRepository, mapper);
   }
 
   @Test
-  void patchMyReservation_updateDatesAndGuests_callsNightsAndInventory_andSaves() {
-    Reservations existing = makeReservationEntity(55L);
-    existing.setCheck_in_date(LocalDate.of(2025, 11, 1));
-    existing.setCheck_out_date(LocalDate.of(2025, 11, 3));
-
-    when(reservationsRepository.findByIdAndUserId(55L, 2L)).thenReturn(Optional.of(existing));
-    when(reservationsRepository.save(any(Reservations.class))).thenAnswer(inv -> inv.getArgument(0));
-
-    PatchReservationRequest req = new PatchReservationRequest();
-    req.setCheckInDate(LocalDate.of(2025, 11, 2));
-    req.setCheckOutDate(LocalDate.of(2025, 11, 5));
-    req.setNumGuests(4);
-
-    doAnswer(inv -> {
-      Reservations r = inv.getArgument(0);
-      r.setCheck_in_date(req.getCheckInDate());
-      r.setCheck_out_date(req.getCheckOutDate());
-      r.setNights(3);
-      return r;
-    }).when(nightsService).recalcNightsOrThrow(eq(existing), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
-
-    doNothing().when(inventoryService).releaseRange(eq(existing.getHotel_id()), eq(existing.getRoom_type_id()),
-        eq(LocalDate.of(2025, 11, 1)), eq(LocalDate.of(2025, 11, 3)));
-    doNothing().when(inventoryService).reserveRangeOrThrow(eq(existing.getHotel_id()), eq(existing.getRoom_type_id()),
-        eq(LocalDate.of(2025, 11, 2)), eq(LocalDate.of(2025, 11, 5)));
-
-    ReservationDetailResponse out = service.patchMyReservation(2L, 55L, req);
-
-    verify(nightsService).recalcNightsOrThrow(eq(existing), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
-    verify(inventoryService).releaseRange(eq(existing.getHotel_id()), eq(existing.getRoom_type_id()),
-        eq(LocalDate.of(2025, 11, 1)), eq(LocalDate.of(2025, 11, 3)));
-    verify(inventoryService).reserveRangeOrThrow(eq(existing.getHotel_id()), eq(existing.getRoom_type_id()),
-        eq(LocalDate.of(2025, 11, 2)), eq(LocalDate.of(2025, 11, 5)));
-    verify(reservationsRepository).save(existing);
-
-    assertEquals(4, out.getNumGuests());
-    assertEquals(3, out.getNights());
-    assertEquals(LocalDate.of(2025, 11, 2), out.getCheckInDate());
-    assertEquals(LocalDate.of(2025, 11, 5), out.getCheckOutDate());
-  }
-
-  @Test
-  void patchMyReservation_onlyNumGuests_doesNotInvokeNights() {
-    Reservations existing = makeReservationEntity(66L);
-    when(reservationsRepository.findByIdAndUserId(66L, 8L)).thenReturn(Optional.of(existing));
-    when(reservationsRepository.save(any(Reservations.class))).thenAnswer(inv -> inv.getArgument(0));
-
-    PatchReservationRequest req = new PatchReservationRequest();
-    req.setNumGuests(5);
-
-    ReservationDetailResponse out = service.patchMyReservation(8L, 66L, req);
-
-    verify(nightsService, never()).recalcNightsOrThrow(any(), any(), any());
-    verify(inventoryService, never()).releaseRange(any(), any(), any(), any());
-    verify(inventoryService, never()).reserveRangeOrThrow(any(), any(), any(), any());
-    verify(reservationsRepository).save(existing);
-
-    assertEquals(5, out.getNumGuests());
-    assertEquals(existing.getNights(), out.getNights());
-  }
-
-  @Test
-  void cancelMyReservation_found_callsOrchestrator() {
-    Reservations existing = makeReservationEntity(77L);
-    when(reservationsRepository.findByIdAndUserId(77L, 9L)).thenReturn(Optional.of(existing));
-
-    service.cancelMyReservation(9L, 77L);
-
-    verify(orchestrator).cancel(existing, "user-cancel", 9L);
-  }
-
-  @Test
-  void cancelMyReservation_notFound_throws() {
-    when(reservationsRepository.findByIdAndUserId(100L, 9L)).thenReturn(Optional.empty());
-    assertThrows(NotFoundException.class, () -> service.cancelMyReservation(9L, 100L));
-  }
-
-  @Test
-  void createReservation_invalidGuests_throws() {
-    CreateReservationRequest req = new CreateReservationRequest();
-    req.setHotelId(1L);
-    req.setRoomTypeId(2L);
-    req.setCheckInDate(LocalDate.of(2025, 12, 1));
-    req.setCheckOutDate(LocalDate.of(2025, 12, 4));
-    req.setNumGuests(0);
-    req.setPriceTotal(new BigDecimal("1"));
+  @DisplayName("createReservation → branch: priceTotal < 0 (throws BadRequestException)")
+  void createReservation_negativePrice_throws() {
+    // Testing method: createReservation; branch: validation priceTotal < 0
+    Long userId = 9L;
+    CreateReservationRequest req = mock(CreateReservationRequest.class);
+    when(req.getHotelId()).thenReturn(1L);
+    when(req.getRoomTypeId()).thenReturn(11L);
+    when(req.getNumGuests()).thenReturn(2);
+    when(req.getPriceTotal()).thenReturn(new BigDecimal("-0.01"));
 
     doNothing().when(entityGuards).ensureHotelExists(1L);
-    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 2L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 11L);
 
-    assertThrows(BadRequestException.class, () -> service.createReservation(9L, req));
-    verify(nightsService, never()).recalcNightsOrThrow(any(), any(), any());
-    verify(inventoryService, never()).reserveRangeOrThrow(any(), any(), any(), any());
+    assertThrows(BadRequestException.class, () -> service.createReservation(userId, req));
+    verifyNoInteractions(nightsService, inventoryService, reservationsRepository, mapper);
+  }
+
+  @Test
+  @DisplayName("createReservation → branch: happy path (guards OK, currency defaulted, nights computed, inventory reserved, save & map)")
+  void createReservation_happyPath_currencyDefault() {
+    // Testing method: createReservation; branch: valid flow
+    Long userId = 9L;
+    LocalDate in = LocalDate.of(2025, 10, 20);
+    LocalDate out = LocalDate.of(2025, 10, 22);
+
+    CreateReservationRequest req = mock(CreateReservationRequest.class);
+    when(req.getHotelId()).thenReturn(1L);
+    when(req.getRoomTypeId()).thenReturn(11L);
+    when(req.getNumGuests()).thenReturn(2);
+    when(req.getCurrency()).thenReturn(null); // expect default "USD"
+    when(req.getPriceTotal()).thenReturn(null); // keep null, allowed
+    when(req.getCheckInDate()).thenReturn(in);
+    when(req.getCheckOutDate()).thenReturn(out);
+
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 11L);
+
+    // nightsService should set dates & nights on the same instance and return it
+    Mockito.lenient().when(nightsService.recalcNightsOrThrow(any(Reservations.class), eq(in), eq(out)))
+        .thenAnswer(inv -> {
+          Reservations r = inv.getArgument(0);
+          r.setCheck_in_date(in);
+          r.setCheck_out_date(out);
+          r.setNights((int) (out.toEpochDay() - in.toEpochDay()));
+          return r;
+        });
+
+    // repository.save returns the same instance
+    ArgumentCaptor<Reservations> saveCap = ArgumentCaptor.forClass(Reservations.class);
+    when(reservationsRepository.save(any(Reservations.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    ReservationDetailResponse detail = mock(ReservationDetailResponse.class);
+    when(mapper.toDetail(any(Reservations.class))).thenReturn(detail);
+
+    ReservationDetailResponse outResp = service.createReservation(userId, req);
+
+    assertSame(detail, outResp);
+
+    // verify inventory reserved with computed dates
+    verify(inventoryService, times(1))
+        .reserveRangeOrThrow(1L, 11L, in, out);
+
+    // verify save values (currency default applied)
+    verify(reservationsRepository).save(saveCap.capture());
+    Reservations saved = saveCap.getValue();
+    assertEquals(userId, saved.getUser_id());
+    assertEquals(1L, saved.getHotel_id());
+    assertEquals(11L, saved.getRoom_type_id());
+    assertEquals(2, saved.getNum_guests());
+    assertEquals("USD", saved.getCurrency(), "Currency should default to USD when req.getCurrency() == null");
+    assertNull(saved.getPrice_total(), "price_total remains null as passed");
+    assertEquals(in, saved.getCheck_in_date());
+    assertEquals(out, saved.getCheck_out_date());
+    assertEquals(2, saved.getNights());
+  }
+
+  // ========================= patchMyReservation =========================
+
+  @Test
+  @DisplayName("patchMyReservation → branch: reservation not found (throws NotFoundException)")
+  void patchMyReservation_notFound() {
+    // Testing method: patchMyReservation; branch: not found -> throws
+    Long userId = 9L, id = 404L;
+    PatchReservationRequest req = mock(PatchReservationRequest.class);
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.empty());
+
+    assertThrows(NotFoundException.class, () -> service.patchMyReservation(userId, id, req));
+    // Repository should be queried exactly once, and no writes should happen
+    verify(reservationsRepository, times(1)).findByIdAndUserId(id, userId);
     verify(reservationsRepository, never()).save(any());
+    verifyNoMoreInteractions(reservationsRepository);
+  }
+
+  @Test
+  @DisplayName("patchMyReservation → branch: dates changed (release old, recalc nights, reserve new, save & map)")
+  void patchMyReservation_datesChanged_flow() {
+    // Testing method: patchMyReservation; branch: re-date path
+    Long userId = 9L, id = 100L;
+    Reservations r = baseReservation(); // old in=2025-10-20, out=2025-10-22
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.of(r));
+
+    LocalDate newIn = LocalDate.of(2025, 10, 23);
+    LocalDate newOut = LocalDate.of(2025, 10, 26);
+
+    PatchReservationRequest req = mock(PatchReservationRequest.class);
+    when(req.getCheckInDate()).thenReturn(newIn);
+    when(req.getCheckOutDate()).thenReturn(newOut);
+    when(req.getNumGuests()).thenReturn(null);
+
+    // release old range first
+    doNothing().when(inventoryService).releaseRange(1L, 11L, r.getCheck_in_date(), r.getCheck_out_date());
+
+    // recalc nights should set to new values on same instance
+    when(nightsService.recalcNightsOrThrow(eq(r), eq(newIn), eq(newOut))).thenAnswer(inv -> {
+      Reservations rr = inv.getArgument(0);
+      rr.setCheck_in_date(newIn);
+      rr.setCheck_out_date(newOut);
+      rr.setNights((int) (newOut.toEpochDay() - newIn.toEpochDay()));
+      return rr;
+    });
+
+    // reserve new range
+    doNothing().when(inventoryService).reserveRangeOrThrow(1L, 11L, newIn, newOut);
+
+    when(reservationsRepository.save(r)).thenReturn(r);
+    ReservationDetailResponse detail = mock(ReservationDetailResponse.class);
+    when(mapper.toDetail(r)).thenReturn(detail);
+
+    ReservationDetailResponse out = service.patchMyReservation(userId, id, req);
+
+    assertSame(detail, out);
+    verify(inventoryService, times(1)).releaseRange(1L, 11L, LocalDate.of(2025,10,20), LocalDate.of(2025,10,22));
+    verify(nightsService, times(1)).recalcNightsOrThrow(r, newIn, newOut);
+    verify(inventoryService, times(1)).reserveRangeOrThrow(1L, 11L, newIn, newOut);
+    verify(reservationsRepository, times(1)).save(r);
+    assertEquals(3, r.getNights());
+  }
+
+  @Test
+  @DisplayName("patchMyReservation → branch: only numGuests changed (valid positive) → save & map; no inventory/nights")
+  void patchMyReservation_onlyNumGuests_valid() {
+    // Testing method: patchMyReservation; branch: only update numGuests valid
+    Long userId = 9L, id = 100L;
+    Reservations r = baseReservation();
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.of(r));
+
+    PatchReservationRequest req = mock(PatchReservationRequest.class);
+    when(req.getCheckInDate()).thenReturn(null);
+    when(req.getCheckOutDate()).thenReturn(null);
+    when(req.getNumGuests()).thenReturn(4);
+
+    when(reservationsRepository.save(r)).thenReturn(r);
+    ReservationDetailResponse detail = mock(ReservationDetailResponse.class);
+    when(mapper.toDetail(r)).thenReturn(detail);
+
+    ReservationDetailResponse out = service.patchMyReservation(userId, id, req);
+
+    assertSame(detail, out);
+    assertEquals(4, r.getNum_guests());
+    verifyNoInteractions(nightsService, inventoryService);
+    verify(reservationsRepository, times(1)).save(r);
+  }
+
+  @Test
+  @DisplayName("patchMyReservation → branch: only numGuests changed (<=0 invalid) → throws BadRequestException")
+  void patchMyReservation_onlyNumGuests_invalid() {
+    // Testing method: patchMyReservation; branch: only update numGuests invalid (<=0)
+    Long userId = 9L, id = 100L;
+    Reservations r = baseReservation();
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.of(r));
+
+    PatchReservationRequest req = mock(PatchReservationRequest.class);
+    when(req.getCheckInDate()).thenReturn(null);
+    when(req.getCheckOutDate()).thenReturn(null);
+    when(req.getNumGuests()).thenReturn(0);
+
+    assertThrows(BadRequestException.class, () -> service.patchMyReservation(userId, id, req));
+    verify(reservationsRepository, never()).save(any());
+    verifyNoInteractions(nightsService, inventoryService, mapper);
+  }
+
+  @Test
+  @DisplayName("patchMyReservation → branch: no changes (dates null & numGuests null) → save & map only")
+  void patchMyReservation_noChanges() {
+    // Testing method: patchMyReservation; branch: no-op fields then save
+    Long userId = 9L, id = 100L;
+    Reservations r = baseReservation();
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.of(r));
+
+    PatchReservationRequest req = mock(PatchReservationRequest.class);
+    when(req.getCheckInDate()).thenReturn(null);
+    when(req.getCheckOutDate()).thenReturn(null);
+    when(req.getNumGuests()).thenReturn(null);
+
+    when(reservationsRepository.save(r)).thenReturn(r);
+    ReservationDetailResponse detail = mock(ReservationDetailResponse.class);
+    when(mapper.toDetail(r)).thenReturn(detail);
+
+    ReservationDetailResponse out = service.patchMyReservation(userId, id, req);
+
+    assertSame(detail, out);
+    verifyNoInteractions(nightsService, inventoryService);
+    verify(reservationsRepository, times(1)).save(r);
+  }
+
+  // ========================= cancelMyReservation =========================
+
+  @Test
+  @DisplayName("cancelMyReservation → branch: reservation not found (throws NotFoundException)")
+  void cancelMyReservation_notFound() {
+    // Testing method: cancelMyReservation; branch: not found -> throws
+    Long userId = 9L, id = 404L;
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.empty());
+
+    assertThrows(NotFoundException.class, () -> service.cancelMyReservation(userId, id));
+    verifyNoInteractions(orchestrator);
+  }
+
+  @Test
+  @DisplayName("cancelMyReservation → branch: happy path (call orchestrator.cancel with reason 'user-cancel')")
+  void cancelMyReservation_happyPath() {
+    // Testing method: cancelMyReservation; branch: found -> orchestrate cancel
+    Long userId = 9L, id = 100L;
+    Reservations r = baseReservation();
+    when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.of(r));
+
+    doNothing().when(orchestrator).cancel(r, "user-cancel", userId);
+
+    service.cancelMyReservation(userId, id);
+
+    verify(orchestrator, times(1)).cancel(r, "user-cancel", userId);
   }
 }

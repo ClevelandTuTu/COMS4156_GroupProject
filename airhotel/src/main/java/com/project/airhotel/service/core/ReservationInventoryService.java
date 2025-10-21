@@ -16,6 +16,7 @@ import java.util.Objects;
 /**
  * @author Ziyang Su
  * @version 1.0.0
+ * todo: add consistency between room_types table and room_type_inventory table
  */
 @Service
 @RequiredArgsConstructor
@@ -24,12 +25,12 @@ public class ReservationInventoryService {
   private final RoomTypeInventoryRepository invRepo;
   private final RoomTypesRepository roomTypesRepo;
 
-  /** 预占库存：对 [checkIn, checkOut) 每天 reserved += 1，available = total - reserved - blocked */
+  /** Pre-occupy stock: for days between [checkIn, checkOut): reserved += 1，available = total - reserved - blocked */
   public void reserveRangeOrThrow(Long hotelId, Long roomTypeId, LocalDate checkIn, LocalDate checkOut) {
     ensureParams(hotelId, roomTypeId, checkIn, checkOut);
 
     List<LocalDate> days = datesBetween(checkIn, checkOut);
-    // 先检查再批量保存，避免半成功
+    // Check before batch save to avoid half successes, half failure
     List<RoomTypeInventory> toSave = new ArrayList<>(days.size());
     for (LocalDate d : days) {
       RoomTypeInventory inv = getOrInitInventoryRow(hotelId, roomTypeId, d);
@@ -44,9 +45,9 @@ public class ReservationInventoryService {
     invRepo.saveAll(toSave);
   }
 
-  /** 释放库存：对 [checkIn, checkOut) 每天 reserved = max(reserved-1, 0) */
+  /** release stock: for days between [checkIn, checkOut): reserved = max(reserved-1, 0) */
   public void releaseRange(Long hotelId, Long roomTypeId, LocalDate checkIn, LocalDate checkOut) {
-    if (hotelId == null || roomTypeId == null || checkIn == null || checkOut == null) return;
+    ensureParams(hotelId, roomTypeId, checkIn, checkOut);
 
     for (LocalDate d : datesBetween(checkIn, checkOut)) {
       invRepo.findForUpdate(hotelId, roomTypeId, d).ifPresent(inv -> {
@@ -58,7 +59,7 @@ public class ReservationInventoryService {
     }
   }
 
-  /** —— 私有工具 —— */
+  /** —— Private tool methods —— */
 
   private void ensureParams(Long hotelId, Long roomTypeId, LocalDate checkIn, LocalDate checkOut) {
     if (hotelId == null || roomTypeId == null || checkIn == null || checkOut == null) {
@@ -70,7 +71,6 @@ public class ReservationInventoryService {
   }
 
   private RoomTypeInventory getOrInitInventoryRow(Long hotelId, Long roomTypeId, LocalDate stayDate) {
-    // 简化：不加行级锁
     return invRepo.findForUpdate(hotelId, roomTypeId, stayDate)
         .orElseGet(() -> {
           RoomTypes rt = roomTypesRepo.findById(roomTypeId)
