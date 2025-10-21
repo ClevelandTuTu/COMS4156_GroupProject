@@ -22,13 +22,13 @@ public class ManagerRoomService {
   private final RoomsRepository roomsRepository;
   private final EntityGuards entityGuards;
 
-  public ManagerRoomService(RoomsRepository roomsRepository,
-                            EntityGuards entityGuards) {
+  public ManagerRoomService(final RoomsRepository roomsRepository,
+                            final EntityGuards entityGuards) {
     this.roomsRepository = roomsRepository;
     this.entityGuards = entityGuards;
   }
 
-  public List<Rooms> listRooms(Long hotelId, RoomStatus status) {
+  public List<Rooms> listRooms(final Long hotelId, final RoomStatus status) {
     entityGuards.ensureHotelExists(hotelId);
     if (status != null) {
       return roomsRepository.findByHotelIdAndStatus(hotelId, status);
@@ -36,24 +36,28 @@ public class ManagerRoomService {
     return roomsRepository.findByHotelId(hotelId);
   }
 
-  public Rooms createRoom(Long hotelId, RoomsCreateRequest req) {
+  public Rooms createRoom(final Long hotelId, final RoomsCreateRequest req) {
     entityGuards.ensureHotelExists(hotelId);
     entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
-    if (roomsRepository.existsByHotelIdAndRoomNumber(hotelId, req.getRoomNumber())
+    if (roomsRepository.existsByHotelIdAndRoomNumber(hotelId,
+        req.getRoomNumber())
     ) {
-      throw new BadRequestException("Room number already exists: " + req.getRoomNumber());
+      throw new BadRequestException("Room number already exists: "
+          + req.getRoomNumber());
     }
-    Rooms r = new Rooms();
+    final Rooms r = new Rooms();
     r.setHotel_id(hotelId);
     r.setRoom_type_id(req.getRoomTypeId());
     r.setRoom_number(req.getRoomNumber());
     r.setFloor(req.getFloor());
-    r.setStatus(req.getStatus() == null ? RoomStatus.available : req.getStatus());
+    r.setStatus(req.getStatus() == null ? RoomStatus.available :
+        req.getStatus());
     return roomsRepository.save(r);
   }
 
-  public Rooms updateRoom(Long hotelId, Long roomId, RoomUpdateRequest req) {
-    Rooms r = entityGuards.getRoomInHotelOrThrow(hotelId, roomId);
+  public Rooms updateRoom(final Long hotelId, final Long roomId,
+                          final RoomUpdateRequest req) {
+    final Rooms r = entityGuards.getRoomInHotelOrThrow(hotelId, roomId);
 
     if (req.getRoomTypeId() != null) {
       entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
@@ -61,18 +65,24 @@ public class ManagerRoomService {
     }
     if (req.getRoomNumber() != null) {
       if (!req.getRoomNumber().equals(r.getRoom_number()) &&
-          roomsRepository.existsByHotelIdAndRoomNumber(hotelId, req.getRoomNumber())) {
-        throw new BadRequestException("Room number already exist: " + req.getRoomNumber());
+          roomsRepository.existsByHotelIdAndRoomNumber(hotelId,
+              req.getRoomNumber())) {
+        throw new BadRequestException("Room number already exist: "
+            + req.getRoomNumber());
       }
       r.setRoom_number(req.getRoomNumber());
     }
-    if (req.getFloor() != null) r.setFloor(req.getFloor());
-    if (req.getStatus() != null) r.setStatus(req.getStatus());
+    if (req.getFloor() != null) {
+      r.setFloor(req.getFloor());
+    }
+    if (req.getStatus() != null) {
+      r.setStatus(req.getStatus());
+    }
     return roomsRepository.save(r);
   }
 
-  public void deleteRoom(Long hotelId, Long roomId) {
-    Rooms r = entityGuards.getRoomInHotelOrThrow(hotelId, roomId);
+  public void deleteRoom(final Long hotelId, final Long roomId) {
+    final Rooms r = entityGuards.getRoomInHotelOrThrow(hotelId, roomId);
     roomsRepository.deleteById(r.getId());
   }
 }

@@ -29,12 +29,13 @@ public class UserReservationService {
   private final ReservationMapper mapper;
   private final EntityGuards entityGuards;
 
-  public UserReservationService(ReservationsRepository reservationsRepository,
-                                ReservationNightsService nightsService,
-                                ReservationInventoryService inventoryService,
-                                ReservationOrchestrator orchestrator,
-                                ReservationMapper mapper,
-                                EntityGuards entityGuards) {
+  public UserReservationService(
+      final ReservationsRepository reservationsRepository,
+      final ReservationNightsService nightsService,
+      final ReservationInventoryService inventoryService,
+      final ReservationOrchestrator orchestrator,
+      final ReservationMapper mapper,
+      final EntityGuards entityGuards) {
     this.reservationsRepository = reservationsRepository;
     this.nightsService = nightsService;
     this.inventoryService = inventoryService;
@@ -43,34 +44,42 @@ public class UserReservationService {
     this.entityGuards = entityGuards;
   }
 
-  public List<ReservationSummaryResponse> listMyReservations(Long userId) {
-    List<Reservations> list = reservationsRepository.findByUserId(userId);
+  public List<ReservationSummaryResponse> listMyReservations(
+      final Long userId) {
+    final List<Reservations> list = reservationsRepository.findByUserId(userId);
     return list.stream()
         .map(mapper::toSummary)
         .collect(java.util.stream.Collectors.toList());
   }
 
-  public ReservationDetailResponse getMyReservation(Long userId, Long id) {
-    Reservations r = reservationsRepository.findByIdAndUserId(id, userId)
-        .orElseThrow(() -> new NotFoundException("Reservation not found: " + id));
+  public ReservationDetailResponse getMyReservation(final Long userId,
+                                                    final Long id) {
+    final Reservations r = reservationsRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new NotFoundException("Reservation not found: "
+            + id));
     return mapper.toDetail(r);
   }
 
-  // TODO: refactor reservation creation and update to Inventory Service, because these code are used by manager reservation service
+  // TODO: refactor reservation creation and update to Inventory Service,
+  //  because these code are used by manager reservation service
   @Transactional
-  public ReservationDetailResponse createReservation(Long userId, CreateReservationRequest req) {
+  public ReservationDetailResponse createReservation(
+      final Long userId,
+      final CreateReservationRequest req) {
     // TODO: calculate total prices instead of take it from input
     entityGuards.ensureHotelExists(req.getHotelId());
-    entityGuards.ensureRoomTypeInHotelOrThrow(req.getHotelId(), req.getRoomTypeId());
+    entityGuards.ensureRoomTypeInHotelOrThrow(req.getHotelId(),
+        req.getRoomTypeId());
 
     if (req.getNumGuests() == null || req.getNumGuests() <= 0) {
       throw new BadRequestException("numGuests must be positive.");
     }
-    if (req.getPriceTotal() != null && req.getPriceTotal().compareTo(BigDecimal.ZERO) < 0) {
+    if (req.getPriceTotal() != null && req.getPriceTotal().compareTo(
+        BigDecimal.ZERO) < 0) {
       throw new BadRequestException("priceTotal must be non-negative.");
     }
 
-    Reservations r = new Reservations();
+    final Reservations r = new Reservations();
     r.setUser_id(userId);
     r.setHotel_id(req.getHotelId());
     r.setRoom_type_id(req.getRoomTypeId());
@@ -80,27 +89,39 @@ public class UserReservationService {
     r.setPrice_total(req.getPriceTotal());
 
     // Calculate nights & write date
-    nightsService.recalcNightsOrThrow(r, req.getCheckInDate(), req.getCheckOutDate());
+    nightsService.recalcNightsOrThrow(r, req.getCheckInDate(),
+        req.getCheckOutDate());
 
     // inventory verification + deduction
-    inventoryService.reserveRangeOrThrow(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
+    inventoryService.reserveRangeOrThrow(r.getHotel_id(), r.getRoom_type_id()
+        , r.getCheck_in_date(), r.getCheck_out_date());
 
-    Reservations saved = reservationsRepository.save(r);
+    final Reservations saved = reservationsRepository.save(r);
     return mapper.toDetail(saved);
   }
 
   @Transactional
-  public ReservationDetailResponse patchMyReservation(Long userId, Long id, PatchReservationRequest req) {
-    Reservations r = reservationsRepository.findByIdAndUserId(id, userId)
-        .orElseThrow(() -> new NotFoundException("Reservation not found: " + id));
+  public ReservationDetailResponse patchMyReservation(
+      final Long userId,
+      final Long id,
+      final PatchReservationRequest req) {
+    final Reservations r = reservationsRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new NotFoundException(
+            "Reservation not found: " + id));
 
     if (req.getCheckInDate() != null || req.getCheckOutDate() != null) {
-      inventoryService.releaseRange(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
-      var newCheckIn = req.getCheckInDate() != null ? req.getCheckInDate() : r.getCheck_in_date();
-      var newCheckOut = req.getCheckOutDate() != null ? req.getCheckOutDate() : r.getCheck_out_date();
+      inventoryService.releaseRange(r.getHotel_id(), r.getRoom_type_id(),
+          r.getCheck_in_date(), r.getCheck_out_date());
+      final var newCheckIn = req.getCheckInDate() != null
+          ? req.getCheckInDate()
+          : r.getCheck_in_date();
+      final var newCheckOut = req.getCheckOutDate() != null
+          ? req.getCheckOutDate()
+          : r.getCheck_out_date();
       nightsService.recalcNightsOrThrow(r, newCheckIn, newCheckOut);
       // TODO: recalculate nightlyPrices & price_total
-      inventoryService.reserveRangeOrThrow(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
+      inventoryService.reserveRangeOrThrow(r.getHotel_id(),
+          r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
     }
     if (req.getNumGuests() != null) {
       // TODO: check number of guest is lower than the capacity of the room type
@@ -109,14 +130,15 @@ public class UserReservationService {
       }
       r.setNum_guests(req.getNumGuests());
     }
-    Reservations saved = reservationsRepository.save(r);
+    final Reservations saved = reservationsRepository.save(r);
     return mapper.toDetail(saved);
   }
 
   @Transactional
-  public void cancelMyReservation(Long userId, Long id) {
-    Reservations r = reservationsRepository.findByIdAndUserId(id, userId)
-        .orElseThrow(() -> new NotFoundException("Reservation not found: " + id));
+  public void cancelMyReservation(final Long userId, final Long id) {
+    final Reservations r = reservationsRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new NotFoundException(
+            "Reservation not found: " + id));
     orchestrator.cancel(r, "user-cancel", userId);
   }
 }
