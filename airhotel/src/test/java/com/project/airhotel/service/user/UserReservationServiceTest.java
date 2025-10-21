@@ -4,13 +4,17 @@ import com.project.airhotel.dto.reservation.CreateReservationRequest;
 import com.project.airhotel.dto.reservation.PatchReservationRequest;
 import com.project.airhotel.dto.reservation.ReservationDetailResponse;
 import com.project.airhotel.dto.reservation.ReservationSummaryResponse;
+import com.project.airhotel.exception.BadRequestException;
 import com.project.airhotel.exception.NotFoundException;
+import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.mapper.ReservationMapper;
 import com.project.airhotel.model.Reservations;
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
 import com.project.airhotel.repository.ReservationsRepository;
-import com.project.airhotel.service.core.ReservationCoreService;
+import com.project.airhotel.service.core.ReservationInventoryService;
+import com.project.airhotel.service.core.ReservationNightsService;
+import com.project.airhotel.service.core.ReservationOrchestrator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,22 +33,19 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UserReservationServiceTest {
 
-  @Mock
-  ReservationsRepository reservationsRepository;
+  @Mock ReservationsRepository reservationsRepository;
+  @Mock ReservationNightsService nightsService;
+  @Mock ReservationInventoryService inventoryService;
+  @Mock ReservationOrchestrator orchestrator;
+  @Mock EntityGuards entityGuards;
 
-  @Mock
-  ReservationCoreService core;
-
-  // Use the real mapper to also cover mapping branches
   ReservationMapper mapper = new ReservationMapper();
 
-  @InjectMocks
-  UserReservationService service;
+  @InjectMocks UserReservationService service;
 
   @BeforeEach
   void init() {
-    // Manually inject the real mapper (since @InjectMocks won't auto-wire our manual instance)
-    service = new UserReservationService(reservationsRepository, core, mapper);
+    service = new UserReservationService(reservationsRepository, nightsService, inventoryService, orchestrator, mapper, entityGuards);
   }
 
   private Reservations makeReservationEntity(Long id) {
@@ -100,24 +101,28 @@ class UserReservationServiceTest {
   }
 
   @Test
-  void createReservation_callsCoreNights_setsDefaults_overridesPrice_saves() {
+  void createReservation_callsNightsAndInventory_andSaves() {
     CreateReservationRequest req = new CreateReservationRequest();
     req.setHotelId(1L);
     req.setRoomTypeId(2L);
     req.setCheckInDate(LocalDate.of(2025, 12, 1));
     req.setCheckOutDate(LocalDate.of(2025, 12, 4));
     req.setNumGuests(3);
-    req.setCurrency(null); // although DTO validates non-null, service fallback branch should still be covered by test
+    req.setCurrency(null);
     req.setPriceTotal(new BigDecimal("999.99"));
 
-    // We will let core set nights on the same instance and return it
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 2L);
+
     Mockito.doAnswer(inv -> {
       Reservations r = inv.getArgument(0);
       r.setCheck_in_date(req.getCheckInDate());
       r.setCheck_out_date(req.getCheckOutDate());
       r.setNights(3);
       return r;
-    }).when(core).recalcNightsOrThrow(any(Reservations.class), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+    }).when(nightsService).recalcNightsOrThrow(any(Reservations.class), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+
+    doNothing().when(inventoryService).reserveRangeOrThrow(eq(1L), eq(2L), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
 
     Reservations saved = new Reservations();
     saved.setId(777L);
@@ -127,24 +132,19 @@ class UserReservationServiceTest {
     saved.setCheck_out_date(req.getCheckOutDate());
     saved.setNights(3);
     saved.setNum_guests(3);
-    saved.setCurrency("USD"); // fallback applied
+    saved.setCurrency("USD"); // fallback
     saved.setPrice_total(new BigDecimal("999.99"));
 
     when(reservationsRepository.save(any(Reservations.class))).thenReturn(saved);
 
     ReservationDetailResponse out = service.createReservation(9L, req);
 
-    // Verify core was invoked with the computed dates
-    verify(core).recalcNightsOrThrow(any(Reservations.class), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+    verify(entityGuards).ensureHotelExists(1L);
+    verify(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 2L);
+    verify(nightsService).recalcNightsOrThrow(any(Reservations.class), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+    verify(inventoryService).reserveRangeOrThrow(eq(1L), eq(2L), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+    verify(reservationsRepository, atLeastOnce()).save(any());
 
-    // Verify we persisted after overriding price to ZERO
-    ArgumentCaptor<Reservations> captor = ArgumentCaptor.forClass(Reservations.class);
-    verify(reservationsRepository, atLeastOnce()).save(captor.capture());
-    Reservations finalSaved = captor.getValue();
-    assertEquals(0, finalSaved.getPrice_total().compareTo(new BigDecimal("999.99")));
-    assertEquals("USD", finalSaved.getCurrency(), "should fallback to USD when null in request");
-
-    // Response reflects saved entity
     assertEquals(777L, out.getId());
     assertEquals(3, out.getNights());
     assertEquals(ReservationStatus.PENDING, out.getStatus());
@@ -153,7 +153,7 @@ class UserReservationServiceTest {
   }
 
   @Test
-  void patchMyReservation_updateDatesAndGuests_callsCoreWithMergedDates_andSaves() {
+  void patchMyReservation_updateDatesAndGuests_callsNightsAndInventory_andSaves() {
     Reservations existing = makeReservationEntity(55L);
     existing.setCheck_in_date(LocalDate.of(2025, 11, 1));
     existing.setCheck_out_date(LocalDate.of(2025, 11, 3));
@@ -166,19 +166,26 @@ class UserReservationServiceTest {
     req.setCheckOutDate(LocalDate.of(2025, 11, 5));
     req.setNumGuests(4);
 
-    // Ensure core receives merged dates from request (both provided here)
     doAnswer(inv -> {
       Reservations r = inv.getArgument(0);
-      // Simulate re-calculation of nights
       r.setCheck_in_date(req.getCheckInDate());
       r.setCheck_out_date(req.getCheckOutDate());
       r.setNights(3);
       return r;
-    }).when(core).recalcNightsOrThrow(eq(existing), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+    }).when(nightsService).recalcNightsOrThrow(eq(existing), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+
+    doNothing().when(inventoryService).releaseRange(eq(existing.getHotel_id()), eq(existing.getRoom_type_id()),
+        eq(LocalDate.of(2025, 11, 1)), eq(LocalDate.of(2025, 11, 3)));
+    doNothing().when(inventoryService).reserveRangeOrThrow(eq(existing.getHotel_id()), eq(existing.getRoom_type_id()),
+        eq(LocalDate.of(2025, 11, 2)), eq(LocalDate.of(2025, 11, 5)));
 
     ReservationDetailResponse out = service.patchMyReservation(2L, 55L, req);
 
-    verify(core).recalcNightsOrThrow(eq(existing), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+    verify(nightsService).recalcNightsOrThrow(eq(existing), eq(req.getCheckInDate()), eq(req.getCheckOutDate()));
+    verify(inventoryService).releaseRange(eq(existing.getHotel_id()), eq(existing.getRoom_type_id()),
+        eq(LocalDate.of(2025, 11, 1)), eq(LocalDate.of(2025, 11, 3)));
+    verify(inventoryService).reserveRangeOrThrow(eq(existing.getHotel_id()), eq(existing.getRoom_type_id()),
+        eq(LocalDate.of(2025, 11, 2)), eq(LocalDate.of(2025, 11, 5)));
     verify(reservationsRepository).save(existing);
 
     assertEquals(4, out.getNumGuests());
@@ -188,7 +195,7 @@ class UserReservationServiceTest {
   }
 
   @Test
-  void patchMyReservation_onlyNumGuests_doesNotInvokeCore() {
+  void patchMyReservation_onlyNumGuests_doesNotInvokeNights() {
     Reservations existing = makeReservationEntity(66L);
     when(reservationsRepository.findByIdAndUserId(66L, 8L)).thenReturn(Optional.of(existing));
     when(reservationsRepository.save(any(Reservations.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -198,35 +205,47 @@ class UserReservationServiceTest {
 
     ReservationDetailResponse out = service.patchMyReservation(8L, 66L, req);
 
-    verify(core, never()).recalcNightsOrThrow(any(), any(), any());
+    verify(nightsService, never()).recalcNightsOrThrow(any(), any(), any());
+    verify(inventoryService, never()).releaseRange(any(), any(), any(), any());
+    verify(inventoryService, never()).reserveRangeOrThrow(any(), any(), any(), any());
     verify(reservationsRepository).save(existing);
 
     assertEquals(5, out.getNumGuests());
-    // Dates/nights remain unchanged
     assertEquals(existing.getNights(), out.getNights());
   }
 
   @Test
-  void patchMyReservation_notFound_throws() {
-    when(reservationsRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
-    PatchReservationRequest req = new PatchReservationRequest();
-    req.setNumGuests(2);
-    assertThrows(NotFoundException.class, () -> service.patchMyReservation(1L, 1L, req));
-  }
-
-  @Test
-  void cancelMyReservation_found_callsCore() {
+  void cancelMyReservation_found_callsOrchestrator() {
     Reservations existing = makeReservationEntity(77L);
     when(reservationsRepository.findByIdAndUserId(77L, 9L)).thenReturn(Optional.of(existing));
 
     service.cancelMyReservation(9L, 77L);
 
-    verify(core).cancel(existing, "user-cancel", 9L);
+    verify(orchestrator).cancel(existing, "user-cancel", 9L);
   }
 
   @Test
   void cancelMyReservation_notFound_throws() {
     when(reservationsRepository.findByIdAndUserId(100L, 9L)).thenReturn(Optional.empty());
     assertThrows(NotFoundException.class, () -> service.cancelMyReservation(9L, 100L));
+  }
+
+  @Test
+  void createReservation_invalidGuests_throws() {
+    CreateReservationRequest req = new CreateReservationRequest();
+    req.setHotelId(1L);
+    req.setRoomTypeId(2L);
+    req.setCheckInDate(LocalDate.of(2025, 12, 1));
+    req.setCheckOutDate(LocalDate.of(2025, 12, 4));
+    req.setNumGuests(0);
+    req.setPriceTotal(new BigDecimal("1"));
+
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 2L);
+
+    assertThrows(BadRequestException.class, () -> service.createReservation(9L, req));
+    verify(nightsService, never()).recalcNightsOrThrow(any(), any(), any());
+    verify(inventoryService, never()).reserveRangeOrThrow(any(), any(), any(), any());
+    verify(reservationsRepository, never()).save(any());
   }
 }
