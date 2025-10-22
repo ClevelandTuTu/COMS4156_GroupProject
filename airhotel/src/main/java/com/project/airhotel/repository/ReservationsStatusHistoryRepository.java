@@ -5,9 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * Spring Data JPA repository for ReservationsStatusHistory.
+ * Provides CRUD and pagination/sorting for status history records
+ * associated with reservations.
  */
 @Repository
-public interface ReservationsStatusHistoryRepository extends JpaRepository<ReservationsStatusHistory, Long> {
+public interface ReservationsStatusHistoryRepository
+    extends JpaRepository<ReservationsStatusHistory, Long> {
 }
