@@ -128,18 +128,18 @@ public class ReservationInventoryService {
           final RoomTypes rt = roomTypesRepo.findById(roomTypeId)
               .orElseThrow(() -> new BadRequestException("Room type not "
                   + "found: " + roomTypeId));
-          if (!Objects.equals(rt.getHotel_id(), hotelId)) {
+          if (!Objects.equals(rt.getHotelId(), hotelId)) {
             throw new BadRequestException("Room type does not belong to "
                 + "hotel: " + hotelId);
           }
           final RoomTypeInventory created = RoomTypeInventory.builder()
-              .hotel_id(hotelId)
-              .room_type_id(roomTypeId)
-              .stay_date(stayDate)
-              .total(rt.getTotal_rooms())
+              .hotelId(hotelId)
+              .roomTypeId(roomTypeId)
+              .stayDate(stayDate)
+              .total(rt.getTotalRooms())
               .reserved(0)
               .blocked(0)
-              .available(rt.getTotal_rooms())
+              .available(rt.getTotalRooms())
               .build();
           return invRepo.save(created);
         });

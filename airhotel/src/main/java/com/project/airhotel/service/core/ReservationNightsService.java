@@ -35,8 +35,8 @@ public class ReservationNightsService {
       throw new BadRequestException("Check out date must be later than check "
           + "in date.");
     }
-    r.setCheck_in_date(checkIn);
-    r.setCheck_out_date(checkOut);
+    r.setCheckInDate(checkIn);
+    r.setCheckOutDate(checkOut);
     r.setNights(nights);
     return r;
   }

@@ -48,13 +48,13 @@ class UserReservationServiceTest {
   private Reservations baseReservation() {
     Reservations r = new Reservations();
     r.setId(100L);
-    r.setUser_id(9L);
-    r.setHotel_id(1L);
-    r.setRoom_type_id(11L);
-    r.setNum_guests(2);
+    r.setUserId(9L);
+    r.setHotelId(1L);
+    r.setRoomTypeId(11L);
+    r.setNumGuests(2);
     r.setCurrency("USD");
-    r.setCheck_in_date(LocalDate.of(2025, 10, 20));
-    r.setCheck_out_date(LocalDate.of(2025, 10, 22));
+    r.setCheckInDate(LocalDate.of(2025, 10, 20));
+    r.setCheckOutDate(LocalDate.of(2025, 10, 22));
     r.setNights(2);
     return r;
   }
@@ -206,8 +206,8 @@ class UserReservationServiceTest {
     Mockito.lenient().when(nightsService.recalcNightsOrThrow(any(Reservations.class), eq(in), eq(out)))
         .thenAnswer(inv -> {
           Reservations r = inv.getArgument(0);
-          r.setCheck_in_date(in);
-          r.setCheck_out_date(out);
+          r.setCheckInDate(in);
+          r.setCheckOutDate(out);
           r.setNights((int) (out.toEpochDay() - in.toEpochDay()));
           return r;
         });
@@ -230,14 +230,14 @@ class UserReservationServiceTest {
     // verify save values (currency default applied)
     verify(reservationsRepository).save(saveCap.capture());
     Reservations saved = saveCap.getValue();
-    assertEquals(userId, saved.getUser_id());
-    assertEquals(1L, saved.getHotel_id());
-    assertEquals(11L, saved.getRoom_type_id());
-    assertEquals(2, saved.getNum_guests());
+    assertEquals(userId, saved.getUserId());
+    assertEquals(1L, saved.getHotelId());
+    assertEquals(11L, saved.getRoomTypeId());
+    assertEquals(2, saved.getNumGuests());
     assertEquals("USD", saved.getCurrency(), "Currency should default to USD when req.getCurrency() == null");
-    assertNull(saved.getPrice_total(), "price_total remains null as passed");
-    assertEquals(in, saved.getCheck_in_date());
-    assertEquals(out, saved.getCheck_out_date());
+    assertNull(saved.getPriceTotal(), "price_total remains null as passed");
+    assertEquals(in, saved.getCheckInDate());
+    assertEquals(out, saved.getCheckOutDate());
     assertEquals(2, saved.getNights());
   }
 
@@ -275,13 +275,13 @@ class UserReservationServiceTest {
     when(req.getNumGuests()).thenReturn(null);
 
     // release old range first
-    doNothing().when(inventoryService).releaseRange(1L, 11L, r.getCheck_in_date(), r.getCheck_out_date());
+    doNothing().when(inventoryService).releaseRange(1L, 11L, r.getCheckInDate(), r.getCheckOutDate());
 
     // recalc nights should set to new values on same instance
     when(nightsService.recalcNightsOrThrow(eq(r), eq(newIn), eq(newOut))).thenAnswer(inv -> {
       Reservations rr = inv.getArgument(0);
-      rr.setCheck_in_date(newIn);
-      rr.setCheck_out_date(newOut);
+      rr.setCheckInDate(newIn);
+      rr.setCheckOutDate(newOut);
       rr.setNights((int) (newOut.toEpochDay() - newIn.toEpochDay()));
       return rr;
     });
@@ -323,7 +323,7 @@ class UserReservationServiceTest {
     ReservationDetailResponse out = service.patchMyReservation(userId, id, req);
 
     assertSame(detail, out);
-    assertEquals(4, r.getNum_guests());
+    assertEquals(4, r.getNumGuests());
     verifyNoInteractions(nightsService, inventoryService);
     verify(reservationsRepository, times(1)).save(r);
   }

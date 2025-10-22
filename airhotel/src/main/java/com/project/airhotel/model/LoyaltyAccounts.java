@@ -10,14 +10,19 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-
+/**
+ * Loyalty program account attached to a user. Tracks tier, points and
+ * stay/spend statistics.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,31 +32,62 @@ import java.time.LocalDate;
     @UniqueConstraint(name = "uq_loyalty_user", columnNames = "user_id")
 })
 public class LoyaltyAccounts {
+
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false)
-  private Long user_id;
+  /**
+   * Owning user id.
+   */
+  @Column(name = "user_id", nullable = false)
+  private Long userId;
 
+  /**
+   * Loyalty tier.
+   */
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
+  @Column(nullable = false, length = ModelConstants.LEN_20)
   private LoyaltyTier tier;
 
+  /**
+   * Current points balance.
+   */
   @Column(nullable = false)
   private Integer points;
 
-  @Column(nullable = false)
-  private Integer lifetime_nights;
+  /**
+   * Lifetime nights stayed.
+   */
+  @Column(name = "lifetime_nights", nullable = false)
+  private Integer lifetimeNights;
 
-  @Column(nullable = false, precision = 12, scale = 2)
-  private BigDecimal lifetime_spend_usd;
+  /**
+   * Lifetime spend in USD.
+   */
+  @Column(name = "lifetime_spend_usd", nullable = false,
+      precision = ModelConstants.P12, scale = ModelConstants.S2)
+  private BigDecimal lifetimeSpendUsd;
 
-  @Column(nullable = false)
-  private Integer annual_nights;
+  /**
+   * Nights stayed in the current year.
+   */
+  @Column(name = "annual_nights", nullable = false)
+  private Integer annualNights;
 
-  @Column(nullable = false, precision = 12, scale = 2)
-  private BigDecimal annual_spend_usd;
+  /**
+   * Spend in USD in the current year.
+   */
+  @Column(name = "annual_spend_usd", nullable = false,
+      precision = ModelConstants.P12, scale = ModelConstants.S2)
+  private BigDecimal annualSpendUsd;
 
-  private LocalDate last_stay_at;
+  /**
+   * Date of the last completed stay.
+   */
+  @Column(name = "last_stay_at")
+  private LocalDate lastStayAt;
 }

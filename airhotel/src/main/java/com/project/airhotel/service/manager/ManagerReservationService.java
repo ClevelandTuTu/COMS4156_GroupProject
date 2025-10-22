@@ -178,52 +178,52 @@ public class ManagerReservationService {
         (req.getCheckInDate() != null || req.getCheckOutDate() != null);
     final boolean needChangeRoomType =
         (req.getRoomTypeId() != null && !req.getRoomTypeId().equals(
-            r.getRoom_type_id()));
+            r.getRoomTypeId()));
 
     if (needChangeRoomType) {
       entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
       // release inventory of old stayed range
-      inventoryService.releaseRange(r.getHotel_id(),
-          r.getRoom_type_id(),
-          r.getCheck_in_date(),
-          r.getCheck_out_date());
+      inventoryService.releaseRange(r.getHotelId(),
+          r.getRoomTypeId(),
+          r.getCheckInDate(),
+          r.getCheckOutDate());
       // change room id
-      r.setRoom_type_id(req.getRoomTypeId());
+      r.setRoomTypeId(req.getRoomTypeId());
       // pre-occupy inventory of new stayed range
-      inventoryService.reserveRangeOrThrow(r.getHotel_id(),
-          r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
+      inventoryService.reserveRangeOrThrow(r.getHotelId(),
+          r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
     }
 
     if (req.getRoomId() != null) {
       entityGuards.ensureRoomBelongsToHotelAndType(hotelId, req.getRoomId(),
-          r.getRoom_type_id());
+          r.getRoomTypeId());
       // Todo: ensure the room is not occupied
-      r.setRoom_id(req.getRoomId());
+      r.setRoomId(req.getRoomId());
     }
 
     if (needChangeDates) {
-      inventoryService.releaseRange(r.getHotel_id(), r.getRoom_type_id(),
-          r.getCheck_in_date(), r.getCheck_out_date());
+      inventoryService.releaseRange(r.getHotelId(), r.getRoomTypeId(),
+          r.getCheckInDate(), r.getCheckOutDate());
 
       final var newCheckIn = req.getCheckInDate() != null
           ? req.getCheckInDate()
-          : r.getCheck_in_date();
+          : r.getCheckInDate();
       final var newCheckOut = req.getCheckOutDate() != null
-          ? req.getCheckOutDate() : r.getCheck_out_date();
+          ? req.getCheckOutDate() : r.getCheckOutDate();
       nightsService.recalcNightsOrThrow(r, newCheckIn, newCheckOut);
 
-      inventoryService.reserveRangeOrThrow(r.getHotel_id(),
-          r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
+      inventoryService.reserveRangeOrThrow(r.getHotelId(),
+          r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
     }
 
     if (req.getNumGuests() != null) {
-      r.setNum_guests(req.getNumGuests());
+      r.setNumGuests(req.getNumGuests());
     }
     if (req.getCurrency() != null) {
       r.setCurrency(req.getCurrency());
     }
     if (req.getPriceTotal() != null) {
-      r.setPrice_total(req.getPriceTotal());
+      r.setPriceTotal(req.getPriceTotal());
     }
     if (req.getNotes() != null) {
       r.setNotes(req.getNotes());
@@ -262,24 +262,24 @@ public class ManagerReservationService {
         reservationId);
     entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getNewRoomTypeId());
 
-    if (r.getUpgrade_status() != UpgradeStatus.ELIGIBLE
-        && r.getUpgrade_status() != UpgradeStatus.APPLIED) {
+    if (r.getUpgradeStatus() != UpgradeStatus.ELIGIBLE
+        && r.getUpgradeStatus() != UpgradeStatus.APPLIED) {
       throw new BadRequestException("You cannot upgrade this reservation "
           + "because the status is "
-          + r.getUpgrade_status());
+          + r.getUpgradeStatus());
     }
 
-    inventoryService.releaseRange(r.getHotel_id(),
-        r.getRoom_type_id(),
-        r.getCheck_in_date(),
-        r.getCheck_out_date());
-    r.setRoom_type_id(req.getNewRoomTypeId());
-    inventoryService.reserveRangeOrThrow(r.getHotel_id(),
-        r.getRoom_type_id(),
-        r.getCheck_in_date(),
-        r.getCheck_out_date());
-    r.setUpgrade_status(UpgradeStatus.APPLIED);
-    r.setUpgraded_at(LocalDateTime.now());
+    inventoryService.releaseRange(r.getHotelId(),
+        r.getRoomTypeId(),
+        r.getCheckInDate(),
+        r.getCheckOutDate());
+    r.setRoomTypeId(req.getNewRoomTypeId());
+    inventoryService.reserveRangeOrThrow(r.getHotelId(),
+        r.getRoomTypeId(),
+        r.getCheckInDate(),
+        r.getCheckOutDate());
+    r.setUpgradeStatus(UpgradeStatus.APPLIED);
+    r.setUpgradedAt(LocalDateTime.now());
     return reservationsRepository.save(r);
   }
 

@@ -98,14 +98,14 @@ class ReservationStatusServiceTest {
 
     // assert history fields
     ReservationsStatusHistory h = hCap.getValue();
-    assertEquals(42L, h.getReservation_id());
-    assertEquals(PENDING, h.getFrom_status());
-    assertEquals(CONFIRMED, h.getTo_status());
+    assertEquals(42L, h.getReservationId());
+    assertEquals(PENDING, h.getFromStatus());
+    assertEquals(CONFIRMED, h.getToStatus());
     assertEquals("manual-approve", h.getReason());
-    assertEquals(999L, h.getChanged_by_user_id());
-    assertNotNull(h.getChanged_at());
-    assertFalse(h.getChanged_at().isBefore(before));
-    assertFalse(h.getChanged_at().isAfter(after));
+    assertEquals(999L, h.getChangedByUserId());
+    assertNotNull(h.getChangedAt());
+    assertFalse(h.getChangedAt().isBefore(before));
+    assertFalse(h.getChangedAt().isAfter(after));
   }
 
   @Test
@@ -128,10 +128,10 @@ class ReservationStatusServiceTest {
     // history persisted with null fields for reason/user
     verify(historyRepository, times(1)).save(hCap.capture());
     ReservationsStatusHistory h = hCap.getValue();
-    assertEquals(CONFIRMED, h.getFrom_status());
-    assertEquals(CHECKED_IN, h.getTo_status());
+    assertEquals(CONFIRMED, h.getFromStatus());
+    assertEquals(CHECKED_IN, h.getToStatus());
     assertNull(h.getReason());
-    assertNull(h.getChanged_by_user_id());
-    assertNotNull(h.getChanged_at());
+    assertNull(h.getChangedByUserId());
+    assertNotNull(h.getChangedAt());
   }
 }

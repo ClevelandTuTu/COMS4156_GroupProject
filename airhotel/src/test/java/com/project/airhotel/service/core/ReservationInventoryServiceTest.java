@@ -42,8 +42,8 @@ class ReservationInventoryServiceTest {
   // --- Helpers ---
   private RoomTypeInventory inv(int total, int reserved, int blocked) {
     RoomTypeInventory i = new RoomTypeInventory();
-    i.setHotel_id(HOTEL_ID);
-    i.setRoom_type_id(ROOM_TYPE_ID);
+    i.setHotelId(HOTEL_ID);
+    i.setRoomTypeId(ROOM_TYPE_ID);
     i.setTotal(total);
     i.setReserved(reserved);
     i.setBlocked(blocked);
@@ -53,9 +53,9 @@ class ReservationInventoryServiceTest {
 
   private RoomTypes roomType(long hotelId, long roomTypeId, int totalRooms) {
     RoomTypes rt = new RoomTypes();
-    rt.setHotel_id(hotelId);
+    rt.setHotelId(hotelId);
     rt.setId(roomTypeId);
-    rt.setTotal_rooms(totalRooms);
+    rt.setTotalRooms(totalRooms);
     return rt;
   }
 

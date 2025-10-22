@@ -51,11 +51,11 @@ public class ReservationStatusService {
     final Reservations saved = reservationsRepository.save(r);
 
     final ReservationsStatusHistory h = new ReservationsStatusHistory();
-    h.setReservation_id(saved.getId());
-    h.setFrom_status(from);
-    h.setTo_status(to);
-    h.setChanged_at(LocalDateTime.now());
-    h.setChanged_by_user_id(changedByUserId);
+    h.setReservationId(saved.getId());
+    h.setFromStatus(from);
+    h.setToStatus(to);
+    h.setChangedAt(LocalDateTime.now());
+    h.setChangedByUserId(changedByUserId);
     h.setReason(reason);
     historyRepository.save(h);
 

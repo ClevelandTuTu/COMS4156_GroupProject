@@ -25,7 +25,7 @@ public interface RoomsRepository extends JpaRepository<Rooms, Long> {
    * @param hotelId hotel identifier
    * @return list of rooms under the hotel
    */
-  @Query("SELECT r FROM Rooms r WHERE r.hotel_id = :hotelId")
+  @Query("SELECT r FROM Rooms r WHERE r.hotelId = :hotelId")
   List<Rooms> findByHotelId(@Param("hotelId") Long hotelId);
 
   /**
@@ -35,7 +35,7 @@ public interface RoomsRepository extends JpaRepository<Rooms, Long> {
    * @param status  desired room status
    * @return list of rooms matching the hotel and status
    */
-  @Query("SELECT r FROM Rooms r WHERE r.hotel_id = :hotelId AND r.status = "
+  @Query("SELECT r FROM Rooms r WHERE r.hotelId = :hotelId AND r.status = "
       + ":status")
   List<Rooms> findByHotelIdAndStatus(@Param("hotelId") Long hotelId,
                                      @Param("status") RoomStatus status);
@@ -49,8 +49,8 @@ public interface RoomsRepository extends JpaRepository<Rooms, Long> {
    * @return true if a room with the same number exists under the hotel, false
    * otherwise
    */
-  @Query("SELECT COUNT(r) > 0 FROM Rooms r WHERE r.hotel_id = :hotelId AND r"
-      + ".room_number = :roomNumber")
+  @Query("SELECT COUNT(r) > 0 FROM Rooms r WHERE r.hotelId = :hotelId AND r"
+      + ".roomNumber = :roomNumber")
   boolean existsByHotelIdAndRoomNumber(@Param("hotelId") Long hotelId,
                                        @Param("roomNumber") String roomNumber);
 }

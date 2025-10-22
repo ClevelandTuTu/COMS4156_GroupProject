@@ -39,10 +39,10 @@ class ReservationOrchestratorTest {
     Reservations r = new Reservations();
     r.setId(100L);
     r.setStatus(status);
-    r.setHotel_id(1L);
-    r.setRoom_type_id(11L);
-    r.setCheck_in_date(LocalDate.of(2025, 10, 20));
-    r.setCheck_out_date(LocalDate.of(2025, 10, 22));
+    r.setHotelId(1L);
+    r.setRoomTypeId(11L);
+    r.setCheckInDate(LocalDate.of(2025, 10, 20));
+    r.setCheckOutDate(LocalDate.of(2025, 10, 22));
     // r.setCanceled_at(null) by default
     return r;
   }
@@ -57,7 +57,7 @@ class ReservationOrchestratorTest {
 
     // No inventory release, no status change, canceled_at unchanged (null)
     verifyNoInteractions(inventoryService, statusService);
-    assertNull(r.getCanceled_at(), "canceled_at should remain null on early return");
+    assertNull(r.getCanceledAt(), "canceled_at should remain null on early return");
   }
 
   @Test
@@ -73,7 +73,7 @@ class ReservationOrchestratorTest {
     assertTrue(ex.getMessage().contains("cannot be cancelled"), "exception message should indicate cannot cancel");
 
     verifyNoInteractions(inventoryService, statusService);
-    assertNull(r.getCanceled_at(), "canceled_at should not be set when exception occurs");
+    assertNull(r.getCanceledAt(), "canceled_at should not be set when exception occurs");
   }
 
   @ParameterizedTest
@@ -92,12 +92,12 @@ class ReservationOrchestratorTest {
 
     // 1) inventory released with exact parameters
     verify(inventoryService, times(1))
-        .releaseRange(r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(), r.getCheck_out_date());
+        .releaseRange(r.getHotelId(), r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
 
     // 2) canceled_at set within [before, after]
-    assertNotNull(r.getCanceled_at(), "canceled_at should be set");
-    assertFalse(r.getCanceled_at().isBefore(before), "canceled_at should not be before 'before'");
-    assertFalse(r.getCanceled_at().isAfter(after), "canceled_at should not be after 'after'");
+    assertNotNull(r.getCanceledAt(), "canceled_at should be set");
+    assertFalse(r.getCanceledAt().isBefore(before), "canceled_at should not be before 'before'");
+    assertFalse(r.getCanceledAt().isAfter(after), "canceled_at should not be after 'after'");
 
     // 3) status change invoked to CANCELED with reason & user id
     verify(statusService, times(1))

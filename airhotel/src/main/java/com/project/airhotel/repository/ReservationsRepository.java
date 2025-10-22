@@ -5,6 +5,7 @@ import com.project.airhotel.model.enums.ReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
  * <p>
  * Author: Ziyang Su Version: 1.0.0
  */
+@Repository
 public interface ReservationsRepository extends JpaRepository<Reservations,
     Long> {
 
@@ -25,7 +27,7 @@ public interface ReservationsRepository extends JpaRepository<Reservations,
    * @param hotelId hotel identifier
    * @return list of reservations for the hotel
    */
-  @Query("SELECT r FROM Reservations r WHERE r.hotel_id = :hotelId")
+  @Query("SELECT r FROM Reservations r WHERE r.hotelId = :hotelId")
   List<Reservations> findByHotelId(@Param("hotelId") Long hotelId);
 
   /**
@@ -35,7 +37,7 @@ public interface ReservationsRepository extends JpaRepository<Reservations,
    * @param status  reservation status filter
    * @return list of reservations for the hotel and status
    */
-  @Query("SELECT r FROM Reservations r WHERE r.hotel_id = :hotelId AND r"
+  @Query("SELECT r FROM Reservations r WHERE r.hotelId = :hotelId AND r"
       + ".status = :status")
   List<Reservations> findByHotelIdAndStatus(
       @Param("hotelId") Long hotelId,
@@ -53,9 +55,9 @@ public interface ReservationsRepository extends JpaRepository<Reservations,
    */
   @Query("""
       SELECT r FROM Reservations r
-      WHERE r.hotel_id = :hotelId
-        AND r.check_in_date >= :start
-        AND r.check_out_date <= :end
+      WHERE r.hotelId = :hotelId
+        AND r.checkInDate >= :start
+        AND r.checkOutDate <= :end
       """)
   List<Reservations> findByHotelIdAndStayRange(@Param("hotelId") Long hotelId,
                                                @Param("start") LocalDate start,
@@ -73,10 +75,10 @@ public interface ReservationsRepository extends JpaRepository<Reservations,
    */
   @Query("""
       SELECT r FROM Reservations r
-      WHERE r.hotel_id = :hotelId
+      WHERE r.hotelId = :hotelId
         AND r.status = :status
-        AND r.check_in_date >= :start
-        AND r.check_out_date <= :end
+        AND r.checkInDate >= :start
+        AND r.checkOutDate <= :end
       """)
   List<Reservations> findByHotelIdAndStatusAndStayRange(
       @Param("hotelId") Long hotelId,
@@ -90,7 +92,7 @@ public interface ReservationsRepository extends JpaRepository<Reservations,
    * @param userId user identifier
    * @return list of user-owned reservations
    */
-  @Query("SELECT r FROM Reservations r WHERE r.user_id = :userId")
+  @Query("SELECT r FROM Reservations r WHERE r.userId = :userId")
   List<Reservations> findByUserId(@Param("userId") Long userId);
 
   /**
@@ -100,7 +102,7 @@ public interface ReservationsRepository extends JpaRepository<Reservations,
    * @param userId user identifier
    * @return optional reservation when found and owned by the user
    */
-  @Query("SELECT r FROM Reservations r WHERE r.id = :id AND r.user_id = "
+  @Query("SELECT r FROM Reservations r WHERE r.id = :id AND r.userId = "
       + ":userId")
   java.util.Optional<Reservations> findByIdAndUserId(
       @Param("id") Long id,

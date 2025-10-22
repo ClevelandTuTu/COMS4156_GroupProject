@@ -38,11 +38,11 @@ class ManagerRoomServiceTest {
   private Rooms baseRoom() {
     Rooms r = new Rooms();
     r.setId(100L);
-    r.setHotel_id(1L);
-    r.setRoom_type_id(11L);
-    r.setRoom_number("101A");
+    r.setHotelId(1L);
+    r.setRoomTypeId(11L);
+    r.setRoomNumber("101A");
     r.setFloor(3);
-    r.setStatus(RoomStatus.available);
+    r.setStatus(RoomStatus.AVAILABLE);
     return r;
   }
 
@@ -56,13 +56,13 @@ class ManagerRoomServiceTest {
     List<Rooms> expected = List.of(baseRoom());
 
     doNothing().when(entityGuards).ensureHotelExists(hotelId);
-    when(roomsRepository.findByHotelIdAndStatus(hotelId, RoomStatus.available)).thenReturn(expected);
+    when(roomsRepository.findByHotelIdAndStatus(hotelId, RoomStatus.AVAILABLE)).thenReturn(expected);
 
-    List<Rooms> out = service.listRooms(hotelId, RoomStatus.available);
+    List<Rooms> out = service.listRooms(hotelId, RoomStatus.AVAILABLE);
 
     assertEquals(expected, out);
     verify(entityGuards, times(1)).ensureHotelExists(hotelId);
-    verify(roomsRepository, times(1)).findByHotelIdAndStatus(hotelId, RoomStatus.available);
+    verify(roomsRepository, times(1)).findByHotelIdAndStatus(hotelId, RoomStatus.AVAILABLE);
   }
 
   @Test
@@ -124,11 +124,11 @@ class ManagerRoomServiceTest {
 
     verify(roomsRepository).save(cap.capture());
     Rooms saved = cap.getValue();
-    assertEquals(hotelId, saved.getHotel_id());
-    assertEquals(11L, saved.getRoom_type_id());
-    assertEquals("101A", saved.getRoom_number());
+    assertEquals(hotelId, saved.getHotelId());
+    assertEquals(11L, saved.getRoomTypeId());
+    assertEquals("101A", saved.getRoomNumber());
     assertEquals(5, saved.getFloor());
-    assertEquals(RoomStatus.available, saved.getStatus(), "Default status should be 'available'");
+    assertEquals(RoomStatus.AVAILABLE, saved.getStatus(), "Default status should be 'available'");
 
     assertSame(saved, out);
   }
@@ -143,7 +143,7 @@ class ManagerRoomServiceTest {
     when(req.getRoomNumber()).thenReturn("102B");
     when(req.getFloor()).thenReturn(6);
     // use any non-null enum value; even same as default is fine for hitting the branch
-    when(req.getStatus()).thenReturn(RoomStatus.available);
+    when(req.getStatus()).thenReturn(RoomStatus.AVAILABLE);
 
     doNothing().when(entityGuards).ensureHotelExists(hotelId);
     doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(hotelId, 11L);
@@ -156,9 +156,9 @@ class ManagerRoomServiceTest {
 
     verify(roomsRepository).save(cap.capture());
     Rooms saved = cap.getValue();
-    assertEquals("102B", saved.getRoom_number());
+    assertEquals("102B", saved.getRoomNumber());
     assertEquals(6, saved.getFloor());
-    assertEquals(RoomStatus.available, saved.getStatus());
+    assertEquals(RoomStatus.AVAILABLE, saved.getStatus());
     assertSame(saved, out);
   }
 
@@ -181,7 +181,7 @@ class ManagerRoomServiceTest {
     Rooms out = service.updateRoom(hotelId, roomId, req);
 
     assertSame(r, out);
-    assertEquals(22L, r.getRoom_type_id());
+    assertEquals(22L, r.getRoomTypeId());
     verify(entityGuards, times(1)).ensureRoomTypeInHotelOrThrow(hotelId, 22L);
     verify(roomsRepository, times(1)).save(r);
   }
@@ -202,7 +202,7 @@ class ManagerRoomServiceTest {
     Rooms out = service.updateRoom(hotelId, roomId, req);
 
     assertSame(r, out);
-    assertEquals("101A", r.getRoom_number());
+    assertEquals("101A", r.getRoomNumber());
     verify(roomsRepository, times(1)).save(r);
   }
 
@@ -234,7 +234,7 @@ class ManagerRoomServiceTest {
 
     RoomUpdateRequest req = mock(RoomUpdateRequest.class);
     when(req.getFloor()).thenReturn(8);
-    when(req.getStatus()).thenReturn(RoomStatus.available); // non-null to hit branch
+    when(req.getStatus()).thenReturn(RoomStatus.AVAILABLE); // non-null to hit branch
 
     when(roomsRepository.save(r)).thenReturn(r);
 
@@ -242,7 +242,7 @@ class ManagerRoomServiceTest {
 
     assertSame(r, out);
     assertEquals(8, r.getFloor());
-    assertEquals(RoomStatus.available, r.getStatus());
+    assertEquals(RoomStatus.AVAILABLE, r.getStatus());
     verify(roomsRepository, times(1)).save(r);
   }
 

@@ -45,11 +45,11 @@ public class ReservationOrchestrator {
     }
 
     inventoryService.releaseRange(
-        r.getHotel_id(), r.getRoom_type_id(), r.getCheck_in_date(),
-        r.getCheck_out_date()
+        r.getHotelId(), r.getRoomTypeId(), r.getCheckInDate(),
+        r.getCheckOutDate()
     );
 
-    r.setCanceled_at(LocalDateTime.now());
+    r.setCanceledAt(LocalDateTime.now());
     statusService.changeStatus(r, ReservationStatus.CANCELED, reason,
         changedByUserId);
   }

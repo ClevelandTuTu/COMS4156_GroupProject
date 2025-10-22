@@ -34,14 +34,14 @@ public class ReservationMapper {
     final ReservationSummaryResponse dto = new ReservationSummaryResponse();
     dto.setId(r.getId());
     dto.setStatus(r.getStatus());
-    dto.setUpgradeStatus(r.getUpgrade_status());
-    dto.setCheckInDate(r.getCheck_in_date());
-    dto.setCheckOutDate(r.getCheck_out_date());
+    dto.setUpgradeStatus(r.getUpgradeStatus());
+    dto.setCheckInDate(r.getCheckInDate());
+    dto.setCheckOutDate(r.getCheckOutDate());
     dto.setNights(r.getNights());
-    dto.setNumGuests(r.getNum_guests());
-    dto.setPriceTotal(r.getPrice_total());
-    if (r.getCreated_at() != null) {
-      dto.setCreatedAt(r.getCreated_at().toInstant(ZoneOffset.UTC));
+    dto.setNumGuests(r.getNumGuests());
+    dto.setPriceTotal(r.getPriceTotal());
+    if (r.getCreatedAt() != null) {
+      dto.setCreatedAt(r.getCreatedAt().toInstant(ZoneOffset.UTC));
     }
     return dto;
   }
@@ -60,16 +60,16 @@ public class ReservationMapper {
     final ReservationDetailResponse dto = new ReservationDetailResponse();
     dto.setId(r.getId());
     dto.setStatus(r.getStatus());
-    dto.setUpgradeStatus(r.getUpgrade_status());
-    dto.setCheckInDate(r.getCheck_in_date());
-    dto.setCheckOutDate(r.getCheck_out_date());
+    dto.setUpgradeStatus(r.getUpgradeStatus());
+    dto.setCheckInDate(r.getCheckInDate());
+    dto.setCheckOutDate(r.getCheckOutDate());
     dto.setNights(r.getNights());
-    dto.setNumGuests(r.getNum_guests());
+    dto.setNumGuests(r.getNumGuests());
     dto.setCurrency(r.getCurrency());
-    dto.setPriceTotal(r.getPrice_total());
+    dto.setPriceTotal(r.getPriceTotal());
     dto.setRoomNumber(null);
-    if (r.getCreated_at() != null) {
-      dto.setCreatedAt(r.getCreated_at().toInstant(ZoneOffset.UTC));
+    if (r.getCreatedAt() != null) {
+      dto.setCreatedAt(r.getCreatedAt().toInstant(ZoneOffset.UTC));
     }
     return dto;
   }

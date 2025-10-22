@@ -21,6 +21,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Reservation master including guest counts, dates, currency and upgrade
+ * status. Some fields may be null until assignment.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -31,57 +35,119 @@ import java.time.LocalDateTime;
         "client_id", "source_reservation_code"})
 })
 public class Reservations {
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private Long client_id;
-  private Long user_id;
+  /**
+   * Owning client id if originated by a client integration.
+   */
+  private Long clientId;
 
+  /**
+   * User id of the guest if known.
+   */
+  private Long userId;
+
+  /**
+   * Hotel id for the reservation.
+   */
   @Column(nullable = false)
-  private Long hotel_id;
+  private Long hotelId;
 
+  /**
+   * Reserved room type id.
+   */
   @Column(nullable = false)
-  private Long room_type_id;
+  private Long roomTypeId;
 
-  private Long room_id;
+  /**
+   * Assigned room id, if allocated.
+   */
+  private Long roomId;
 
+  /**
+   * Workflow status of the reservation.
+   */
+  @Builder.Default
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
+  @Column(nullable = false, length = ModelConstants.LEN_20)
   private ReservationStatus status = ReservationStatus.PENDING;
 
+  /**
+   * Check-in date.
+   */
   @Column(nullable = false)
-  private LocalDate check_in_date;
+  private LocalDate checkInDate;
 
+  /**
+   * Check-out date.
+   */
   @Column(nullable = false)
-  private LocalDate check_out_date;
+  private LocalDate checkOutDate;
 
+  /**
+   * Number of nights for the stay.
+   */
   @Column(nullable = false)
   private Integer nights;
 
+  /**
+   * Number of guests.
+   */
   @Column(nullable = false)
-  private Integer num_guests;
+  private Integer numGuests;
 
+  /**
+   * ISO 4217 currency code, 3 letters.
+   */
   @Column(nullable = false, columnDefinition = "CHAR(3)")
   private String currency;
 
-  @Column(nullable = false, precision = 12, scale = 2)
-  private BigDecimal price_total;
+  /**
+   * Total price in currency minor units scale 2.
+   */
+  @Column(nullable = false, precision = ModelConstants.P12, scale =
+      ModelConstants.S2)
+  private BigDecimal priceTotal;
 
-  @Column(length = 100)
-  private String source_reservation_code;
+  /**
+   * Source reservation code provided by external system.
+   */
+  @Column(length = ModelConstants.LEN_100)
+  private String sourceReservationCode;
 
+  /**
+   * Upgrade eligibility and status.
+   */
+  @Builder.Default
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private UpgradeStatus upgrade_status = UpgradeStatus.NOT_ELIGIBLE;
+  @Column(nullable = false, length = ModelConstants.LEN_20)
+  private UpgradeStatus upgradeStatus = UpgradeStatus.NOT_ELIGIBLE;
 
+  /**
+   * Free-form notes for back office use.
+   */
   @Column(columnDefinition = "text")
   private String notes;
 
+  /**
+   * Creation timestamp managed by Hibernate.
+   */
   @CreationTimestamp
   @Column(nullable = false)
-  private LocalDateTime created_at;
+  private LocalDateTime createdAt;
 
-  private LocalDateTime upgraded_at;
-  private LocalDateTime canceled_at;
+  /**
+   * Timestamp when an upgrade was applied.
+   */
+  private LocalDateTime upgradedAt;
+
+  /**
+   * Timestamp when the reservation was canceled.
+   */
+  private LocalDateTime canceledAt;
 }

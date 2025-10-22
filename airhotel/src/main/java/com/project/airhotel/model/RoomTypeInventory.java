@@ -16,6 +16,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Inventory counts for a room type on a date. Available is derived as total
+ * minus reserved minus blocked by business logic.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -26,32 +30,59 @@ import java.time.LocalDateTime;
         "hotel_id", "room_type_id", "stay_date"})
 })
 public class RoomTypeInventory {
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /**
+   * Hotel id.
+   */
   @Column(nullable = false)
-  private Long hotel_id;
+  private Long hotelId;
 
+  /**
+   * Room type id.
+   */
   @Column(nullable = false)
-  private Long room_type_id;
+  private Long roomTypeId;
 
+  /**
+   * Date for which the counts apply.
+   */
   @Column(nullable = false)
-  private LocalDate stay_date;
+  private LocalDate stayDate;
 
+  /**
+   * Total physical rooms of this type.
+   */
   @Column(nullable = false)
   private Integer total;
 
+  /**
+   * Count of reserved rooms for the date.
+   */
   @Column(nullable = false)
   private Integer reserved;
 
+  /**
+   * Count of blocked rooms for the date.
+   */
   @Column(nullable = false)
   private Integer blocked;
 
+  /**
+   * Computed available rooms for the date.
+   */
   @Column(nullable = false)
   private Integer available;
 
+  /**
+   * Update timestamp managed by Hibernate.
+   */
   @UpdateTimestamp
   @Column(nullable = false)
-  private LocalDateTime updated_at;
+  private LocalDateTime updatedAt;
 }

@@ -17,6 +17,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+
+/**
+ * Room type master data for a given hotel, including capacity, bedding
+ * information and base pricing.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,46 +32,90 @@ import java.time.LocalDateTime;
         "hotel_id", "code"})
 })
 public class RoomTypes {
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /**
+   * Hotel id to which this room type belongs.
+   */
   @Column(nullable = false)
-  private Long hotel_id;
+  private Long hotelId;
 
-  @Column(nullable = false, length = 50)
+  /**
+   * Hotel-specific code that identifies the room type.
+   */
+  @Column(nullable = false, length = ModelConstants.LEN_50)
   private String code;
 
-  @Column(nullable = false, length = 120)
+  /**
+   * Human readable room type name.
+   */
+  @Column(nullable = false, length = ModelConstants.LEN_120)
   private String name;
 
+  /**
+   * Optional long description of the room type.
+   */
   @Column(columnDefinition = "TEXT")
   private String description;
 
+  /**
+   * Maximum guest capacity for this room type.
+   */
   @Column(nullable = false)
   private Integer capacity;
 
-  @Column(length = 50)
-  private String bed_type;
+  /**
+   * Bed type label, for example King, Queen, Twin.
+   */
+  @Column(length = ModelConstants.LEN_50)
+  private String bedType;
 
-  private Integer bed_num;
+  /**
+   * Number of beds, if maintained.
+   */
+  private Integer bedNum;
 
-  @Column(precision = 6, scale = 2)
-  private BigDecimal bed_size_m2;
+  /**
+   * Bed size in square meters if recorded.
+   */
+  @Column(name = "bed_size_m2", precision = ModelConstants.P6, scale =
+      ModelConstants.S2)
+  private BigDecimal bedSizeM2;
 
-  @Column(nullable = false, precision = 12, scale = 2)
-  private BigDecimal base_rate;
+  /**
+   * Base rate used as default price reference.
+   */
+  @Column(nullable = false, precision = ModelConstants.P12, scale =
+      ModelConstants.S2)
+  private BigDecimal baseRate;
 
+  /**
+   * Optional ranking used for ordering or merchandising.
+   */
   private Integer ranking;
 
+  /**
+   * Total physical rooms of this type in the hotel.
+   */
   @Column(nullable = false)
-  private Integer total_rooms;
+  private Integer totalRooms;
 
+  /**
+   * Creation timestamp managed by Hibernate.
+   */
   @CreationTimestamp
   @Column(nullable = false)
-  private LocalDateTime created_at;
+  private LocalDateTime createdAt;
 
+  /**
+   * Update timestamp managed by Hibernate.
+   */
   @UpdateTimestamp
   @Column(nullable = false)
-  private LocalDateTime updated_at;
+  private LocalDateTime updatedAt;
 }

@@ -20,6 +20,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+
+/**
+ * Platform user account used for authentication and authorization.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,32 +33,60 @@ import java.time.LocalDateTime;
     @UniqueConstraint(name = "uq_users_email", columnNames = "email")
 })
 public class Users {
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /**
+   * Unique email address used for login.
+   */
   @Column(nullable = false)
   private String email;
 
-  @Column(nullable = false, length = 120)
+  /**
+   * User display name.
+   */
+  @Column(nullable = false, length = ModelConstants.LEN_120)
   private String name;
 
+  /**
+   * Role controlling access permissions.
+   */
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private UserRole role = UserRole.guest;
+  @Column(nullable = false, length = ModelConstants.LEN_20)
+  @Builder.Default
+  private UserRole role = UserRole.GUEST;
+
+  /**
+   * Optional phone number.
+   */
   @Column()
   private String phone;
+
+  /**
+   * Creation timestamp managed by Hibernate.
+   */
   @CreationTimestamp
   @Column(nullable = false)
-  private LocalDateTime created_at;
+  private LocalDateTime createdAt;
+
+  /**
+   * Update timestamp managed by Hibernate.
+   */
   @UpdateTimestamp
   @Column(nullable = false)
-  private LocalDateTime updated_at;
+  private LocalDateTime updatedAt;
 
+  /**
+   * Ensure default role is set if not provided before insert.
+   */
   @PrePersist
   void prePersist() {
     if (role == null) {
-      role = UserRole.guest;
+      role = UserRole.GUEST;
     }
   }
 }

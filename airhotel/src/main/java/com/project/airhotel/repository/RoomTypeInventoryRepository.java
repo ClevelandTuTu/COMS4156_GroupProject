@@ -38,10 +38,12 @@ public interface RoomTypeInventoryRepository
    */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("""
-      select i from RoomTypeInventory i
-      where i.hotel_id = :hotelId and i.room_type_id = :roomTypeId
-      and i.stay_date = :stayDate
-      """)
+         select i
+           from RoomTypeInventory i
+          where i.hotelId    = :hotelId
+            and i.roomTypeId = :roomTypeId
+            and i.stayDate   = :stayDate
+         """)
   Optional<RoomTypeInventory> findForUpdate(
       @Param("hotelId") Long hotelId,
       @Param("roomTypeId") Long roomTypeId,

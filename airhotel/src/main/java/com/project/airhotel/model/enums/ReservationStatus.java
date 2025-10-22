@@ -1,5 +1,19 @@
 package com.project.airhotel.model.enums;
 
+/**
+ * Reservation workflow statuses.
+ */
 public enum ReservationStatus {
-  PENDING, CONFIRMED, CANCELED, CHECKED_IN, CHECKED_OUT, NO_SHOW
+  /** Created not yet confirmed. */
+  PENDING,
+  /** Confirmed and active. */
+  CONFIRMED,
+  /** Canceled prior to stay. */
+  CANCELED,
+  /** Guest has checked in. */
+  CHECKED_IN,
+  /** Guest has checked out. */
+  CHECKED_OUT,
+  /** Guest did not show up. */
+  NO_SHOW
 }

@@ -156,23 +156,23 @@ public class UserReservationService {
     }
 
     final Reservations r = new Reservations();
-    r.setUser_id(userId);
-    r.setHotel_id(req.getHotelId());
-    r.setRoom_type_id(req.getRoomTypeId());
-    r.setNum_guests(req.getNumGuests());
+    r.setUserId(userId);
+    r.setHotelId(req.getHotelId());
+    r.setRoomTypeId(req.getRoomTypeId());
+    r.setNumGuests(req.getNumGuests());
     r.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
     // note: do calculation rather than take from input
-    r.setPrice_total(req.getPriceTotal());
+    r.setPriceTotal(req.getPriceTotal());
 
     // Calculate nights & write date
     nightsService.recalcNightsOrThrow(r, req.getCheckInDate(),
         req.getCheckOutDate());
 
     // inventory verification + deduction
-    inventoryService.reserveRangeOrThrow(r.getHotel_id(),
-        r.getRoom_type_id(),
-        r.getCheck_in_date(),
-        r.getCheck_out_date());
+    inventoryService.reserveRangeOrThrow(r.getHotelId(),
+        r.getRoomTypeId(),
+        r.getCheckInDate(),
+        r.getCheckOutDate());
 
     final Reservations saved = reservationsRepository.save(r);
     return mapper.toDetail(saved);
@@ -204,29 +204,29 @@ public class UserReservationService {
             -> new NotFoundException("Reservation not found: " + id));
 
     if (req.getCheckInDate() != null || req.getCheckOutDate() != null) {
-      inventoryService.releaseRange(r.getHotel_id(),
-          r.getRoom_type_id(),
-          r.getCheck_in_date(),
-          r.getCheck_out_date());
+      inventoryService.releaseRange(r.getHotelId(),
+          r.getRoomTypeId(),
+          r.getCheckInDate(),
+          r.getCheckOutDate());
       final var newCheckIn = req.getCheckInDate() != null
           ? req.getCheckInDate()
-          : r.getCheck_in_date();
+          : r.getCheckInDate();
       final var newCheckOut = req.getCheckOutDate() != null
           ? req.getCheckOutDate()
-          : r.getCheck_out_date();
+          : r.getCheckOutDate();
       nightsService.recalcNightsOrThrow(r, newCheckIn, newCheckOut);
       // note: recalculate nightlyPrices & price_total
-      inventoryService.reserveRangeOrThrow(r.getHotel_id(),
-          r.getRoom_type_id(),
-          r.getCheck_in_date(),
-          r.getCheck_out_date());
+      inventoryService.reserveRangeOrThrow(r.getHotelId(),
+          r.getRoomTypeId(),
+          r.getCheckInDate(),
+          r.getCheckOutDate());
     }
     if (req.getNumGuests() != null) {
       // note: check number of guest is lower than the capacity of the room type
       if (req.getNumGuests() <= 0) {
         throw new BadRequestException("numGuests must be positive.");
       }
-      r.setNum_guests(req.getNumGuests());
+      r.setNumGuests(req.getNumGuests());
     }
     final Reservations saved = reservationsRepository.save(r);
     return mapper.toDetail(saved);

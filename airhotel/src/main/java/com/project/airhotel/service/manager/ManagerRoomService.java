@@ -96,11 +96,11 @@ public class ManagerRoomService {
           + req.getRoomNumber());
     }
     final Rooms r = new Rooms();
-    r.setHotel_id(hotelId);
-    r.setRoom_type_id(req.getRoomTypeId());
-    r.setRoom_number(req.getRoomNumber());
+    r.setHotelId(hotelId);
+    r.setRoomTypeId(req.getRoomTypeId());
+    r.setRoomNumber(req.getRoomNumber());
     r.setFloor(req.getFloor());
-    r.setStatus(req.getStatus() == null ? RoomStatus.available
+    r.setStatus(req.getStatus() == null ? RoomStatus.AVAILABLE
         : req.getStatus());
     return roomsRepository.save(r);
   }
@@ -130,16 +130,16 @@ public class ManagerRoomService {
 
     if (req.getRoomTypeId() != null) {
       entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
-      r.setRoom_type_id(req.getRoomTypeId());
+      r.setRoomTypeId(req.getRoomTypeId());
     }
     if (req.getRoomNumber() != null) {
-      if (!req.getRoomNumber().equals(r.getRoom_number())
+      if (!req.getRoomNumber().equals(r.getRoomNumber())
           && roomsRepository.existsByHotelIdAndRoomNumber(hotelId,
               req.getRoomNumber())) {
         throw new BadRequestException("Room number already exist: "
             + req.getRoomNumber());
       }
-      r.setRoom_number(req.getRoomNumber());
+      r.setRoomNumber(req.getRoomNumber());
     }
     if (req.getFloor() != null) {
       r.setFloor(req.getFloor());

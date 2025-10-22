@@ -70,7 +70,7 @@ public class EntityGuards {
     final Rooms room = roomsRepository.findById(roomId)
         .orElseThrow(()
             -> new NotFoundException("Room Id does not exist: " + roomId));
-    if (!room.getHotel_id().equals(hotelId)) {
+    if (!room.getHotelId().equals(hotelId)) {
       throw new BadRequestException("Room does not belong to this hotel.");
     }
     return room;
@@ -94,7 +94,7 @@ public class EntityGuards {
         .orElseThrow(()
             -> new NotFoundException("Reservation does not exist:"
             + " " + reservationId));
-    if (!r.getHotel_id().equals(hotelId)) {
+    if (!r.getHotelId().equals(hotelId)) {
       throw new BadRequestException("This reservation does not belong to this"
           + " hotel.");
     }
@@ -118,7 +118,7 @@ public class EntityGuards {
         .orElseThrow(()
             -> new NotFoundException("Room type does not exist: "
             + roomTypeId));
-    if (!rt.getHotel_id().equals(hotelId)) {
+    if (!rt.getHotelId().equals(hotelId)) {
       throw new BadRequestException("Room type does not belong to hotel "
           + hotelId);
     }
@@ -141,7 +141,7 @@ public class EntityGuards {
                                               final Long expectedRoomTypeId) {
     final Rooms room = getRoomInHotelOrThrow(hotelId, roomId);
     if (expectedRoomTypeId != null
-        && !room.getRoom_type_id().equals(expectedRoomTypeId)) {
+        && !room.getRoomTypeId().equals(expectedRoomTypeId)) {
       throw new BadRequestException("Room's type does not match expected "
           + "roomTypeId.");
     }

@@ -47,17 +47,17 @@ class ManagerReservationServiceTest {
   private Reservations baseRes() {
     Reservations r = new Reservations();
     r.setId(100L);
-    r.setHotel_id(1L);
-    r.setRoom_type_id(11L);
-    r.setRoom_id(0L);
+    r.setHotelId(1L);
+    r.setRoomTypeId(11L);
+    r.setRoomId(0L);
     r.setStatus(ReservationStatus.PENDING);
-    r.setUpgrade_status(UpgradeStatus.ELIGIBLE);
-    r.setCheck_in_date(LocalDate.of(2025, 10, 20));
-    r.setCheck_out_date(LocalDate.of(2025, 10, 22));
+    r.setUpgradeStatus(UpgradeStatus.ELIGIBLE);
+    r.setCheckInDate(LocalDate.of(2025, 10, 20));
+    r.setCheckOutDate(LocalDate.of(2025, 10, 22));
     r.setNights(2);
     r.setCurrency("USD");
-    r.setPrice_total(BigDecimal.valueOf(200));
-    r.setNum_guests(2);
+    r.setPriceTotal(BigDecimal.valueOf(200));
+    r.setNumGuests(2);
     return r;
   }
 
@@ -169,9 +169,9 @@ class ManagerReservationServiceTest {
     Reservations out = service.patchReservation(hotelId, resId, req);
 
     assertSame(out, r);
-    assertEquals(22L, r.getRoom_type_id());
-    verify(inventoryService).releaseRange(1L, 11L, r.getCheck_in_date(), r.getCheck_out_date());
-    verify(inventoryService).reserveRangeOrThrow(1L, 22L, r.getCheck_in_date(), r.getCheck_out_date());
+    assertEquals(22L, r.getRoomTypeId());
+    verify(inventoryService).releaseRange(1L, 11L, r.getCheckInDate(), r.getCheckOutDate());
+    verify(inventoryService).reserveRangeOrThrow(1L, 22L, r.getCheckInDate(), r.getCheckOutDate());
     verifyNoInteractions(nightsService, statusService);
   }
 
@@ -187,13 +187,13 @@ class ManagerReservationServiceTest {
     when(req.getRoomTypeId()).thenReturn(null);
     when(req.getRoomId()).thenReturn(555L);
 
-    doNothing().when(entityGuards).ensureRoomBelongsToHotelAndType(hotelId, 555L, r.getRoom_type_id());
+    doNothing().when(entityGuards).ensureRoomBelongsToHotelAndType(hotelId, 555L, r.getRoomTypeId());
     when(reservationsRepository.save(r)).thenReturn(r);
 
     Reservations out = service.patchReservation(hotelId, resId, req);
 
     assertSame(r, out);
-    assertEquals(555L, r.getRoom_id());
+    assertEquals(555L, r.getRoomId());
     verify(entityGuards).ensureRoomBelongsToHotelAndType(hotelId, 555L, 11L);
     verifyNoInteractions(inventoryService, nightsService, statusService);
   }
@@ -216,8 +216,8 @@ class ManagerReservationServiceTest {
     when(req.getCheckOutDate()).thenReturn(newOut);
 
     when(nightsService.recalcNightsOrThrow(eq(r), eq(newIn), eq(newOut))).thenAnswer(inv -> {
-      r.setCheck_in_date(newIn);
-      r.setCheck_out_date(newOut);
+      r.setCheckInDate(newIn);
+      r.setCheckOutDate(newOut);
       r.setNights((int) (newOut.toEpochDay() - newIn.toEpochDay()));
       return r;
     });
@@ -253,9 +253,9 @@ class ManagerReservationServiceTest {
     Reservations out = service.patchReservation(hotelId, resId, req);
 
     assertSame(r, out);
-    assertEquals(4, r.getNum_guests());
+    assertEquals(4, r.getNumGuests());
     assertEquals("EUR", r.getCurrency());
-    assertEquals(BigDecimal.valueOf(555.55), r.getPrice_total());
+    assertEquals(BigDecimal.valueOf(555.55), r.getPriceTotal());
     assertEquals("vip guest", r.getNotes());
   }
 
@@ -291,7 +291,7 @@ class ManagerReservationServiceTest {
     // Testing method: applyUpgrade; branch: throws on invalid upgrade status
     Long hotelId = 1L, resId = 100L;
     Reservations r = baseRes();
-    r.setUpgrade_status(UpgradeStatus.NOT_ELIGIBLE);
+    r.setUpgradeStatus(UpgradeStatus.NOT_ELIGIBLE);
     when(entityGuards.getReservationInHotelOrThrow(hotelId, resId)).thenReturn(r);
 
     ApplyUpgradeRequest req = mock(ApplyUpgradeRequest.class);
@@ -323,11 +323,11 @@ class ManagerReservationServiceTest {
     LocalDateTime after = LocalDateTime.now();
 
     assertSame(r, out);
-    assertEquals(22L, r.getRoom_type_id());
-    assertEquals(UpgradeStatus.APPLIED, r.getUpgrade_status());
-    assertNotNull(r.getUpgraded_at());
-    assertFalse(r.getUpgraded_at().isBefore(before));
-    assertFalse(r.getUpgraded_at().isAfter(after));
+    assertEquals(22L, r.getRoomTypeId());
+    assertEquals(UpgradeStatus.APPLIED, r.getUpgradeStatus());
+    assertNotNull(r.getUpgradedAt());
+    assertFalse(r.getUpgradedAt().isBefore(before));
+    assertFalse(r.getUpgradedAt().isAfter(after));
 
     verify(inventoryService).releaseRange(1L, 11L, LocalDate.of(2025,10,20), LocalDate.of(2025,10,22));
     verify(inventoryService).reserveRangeOrThrow(1L, 22L, LocalDate.of(2025,10,20), LocalDate.of(2025,10,22));

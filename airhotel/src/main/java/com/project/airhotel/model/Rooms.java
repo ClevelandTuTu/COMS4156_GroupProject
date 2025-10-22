@@ -19,6 +19,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Physical room record within a hotel, including number and status.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,30 +32,56 @@ import java.time.LocalDateTime;
         "hotel_id", "room_number"})
 })
 public class Rooms {
+
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /**
+   * Hotel id to which the room belongs.
+   */
   @Column(nullable = false)
-  private Long hotel_id;
+  private Long hotelId;
 
+  /**
+   * Room type id for this room.
+   */
   @Column(nullable = false)
-  private Long room_type_id;
+  private Long roomTypeId;
 
-  @Column(nullable = false, length = 20)
-  private String room_number;
+  /**
+   * Human readable room number.
+   */
+  @Column(nullable = false, length = ModelConstants.LEN_20)
+  private String roomNumber;
 
+  /**
+   * Floor number, if maintained.
+   */
   private Integer floor;
 
+  /**
+   * Operational status of the room.
+   */
+  @Builder.Default
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private RoomStatus status = RoomStatus.available;
+  @Column(nullable = false, length = ModelConstants.LEN_20)
+  private RoomStatus status = RoomStatus.AVAILABLE;
 
+  /**
+   * Creation timestamp managed by Hibernate.
+   */
   @CreationTimestamp
   @Column(nullable = false)
-  private LocalDateTime created_at;
+  private LocalDateTime createdAt;
 
+  /**
+   * Update timestamp managed by Hibernate.
+   */
   @UpdateTimestamp
   @Column(nullable = false)
-  private LocalDateTime updated_at;
+  private LocalDateTime updatedAt;
 }

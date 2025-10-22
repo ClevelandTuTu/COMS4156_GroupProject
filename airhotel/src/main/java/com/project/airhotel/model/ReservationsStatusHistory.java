@@ -16,6 +16,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Immutable audit trail of reservation status transitions.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,27 +26,52 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "reservations_status_history")
 public class ReservationsStatusHistory {
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /**
+   * Reservation id to which this history belongs.
+   */
   @Column(nullable = false)
-  private Long reservation_id;
+  private Long reservationId;
 
+  /**
+   * Previous status.
+   */
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private ReservationStatus from_status;
+  @Column(nullable = false, length = ModelConstants.LEN_20)
+  private ReservationStatus fromStatus;
 
+  /**
+   * New status after the transition.
+   */
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 20)
-  private ReservationStatus to_status;
+  @Column(nullable = false, length = ModelConstants.LEN_20)
+  private ReservationStatus toStatus;
 
+  /**
+   * Time when the change happened.
+   */
   @Column(nullable = false)
-  private LocalDateTime changed_at;
+  private LocalDateTime changedAt;
 
-  private Long changed_by_user_id;
-  private Long changed_by_client_id;
+  /**
+   * User id who triggered the change, if any.
+   */
+  private Long changedByUserId;
 
+  /**
+   * Client id who triggered the change, if any.
+   */
+  private Long changedByClientId;
+
+  /**
+   * Optional human readable reason for the change.
+   */
   @Column(columnDefinition = "TEXT")
   private String reason;
 }

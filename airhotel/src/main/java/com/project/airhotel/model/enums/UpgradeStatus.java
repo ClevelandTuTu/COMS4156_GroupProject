@@ -1,5 +1,17 @@
 package com.project.airhotel.model.enums;
 
+/**
+ * Complimentary/paid upgrade workflow state.
+ */
 public enum UpgradeStatus {
-  NOT_ELIGIBLE, ELIGIBLE, QUEUED, APPLIED, DECLINED
+  /** Guest not eligible for upgrade. */
+  NOT_ELIGIBLE,
+  /** Eligible but not yet queued or applied. */
+  ELIGIBLE,
+  /** Queued and awaiting processing. */
+  QUEUED,
+  /** Upgrade has been applied. */
+  APPLIED,
+  /** Guest/ops declined upgrade. */
+  DECLINED
 }

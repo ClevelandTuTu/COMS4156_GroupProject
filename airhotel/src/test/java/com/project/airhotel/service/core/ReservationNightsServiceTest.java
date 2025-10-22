@@ -87,8 +87,8 @@ class ReservationNightsServiceTest {
     Reservations ret = service.recalcNightsOrThrow(r, in, out);
 
     assertSame(r, ret, "Should return the same Reservations instance");
-    assertEquals(in, r.getCheck_in_date());
-    assertEquals(out, r.getCheck_out_date());
+    assertEquals(in, r.getCheckInDate());
+    assertEquals(out, r.getCheckOutDate());
     assertEquals(1, r.getNights());
   }
 
@@ -103,8 +103,8 @@ class ReservationNightsServiceTest {
     Reservations ret = service.recalcNightsOrThrow(r, in, out);
 
     assertSame(r, ret);
-    assertEquals(in, r.getCheck_in_date());
-    assertEquals(out, r.getCheck_out_date());
+    assertEquals(in, r.getCheckInDate());
+    assertEquals(out, r.getCheckOutDate());
     assertEquals(5, r.getNights());
   }
 
@@ -121,7 +121,7 @@ class ReservationNightsServiceTest {
 
     assertSame(r, ret);
     assertEquals(3, r.getNights());
-    assertEquals(in, r.getCheck_in_date());
-    assertEquals(out, r.getCheck_out_date());
+    assertEquals(in, r.getCheckInDate());
+    assertEquals(out, r.getCheckOutDate());
   }
 }

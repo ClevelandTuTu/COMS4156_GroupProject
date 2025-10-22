@@ -16,6 +16,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Hotel master record including address and star rating.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,43 +26,81 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "hotels")
 public class Hotels {
+
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, length = 120)
+  /**
+   * Hotel name.
+   */
+  @Column(nullable = false, length = ModelConstants.LEN_120)
   private String name;
 
-  @Column(length = 120)
+  /**
+   * Optional brand name.
+   */
+  @Column(length = ModelConstants.LEN_120)
   private String brand;
 
-  @Column(nullable = false, length = 200)
-  private String address_line1;
+  /**
+   * Street address line 1.
+   */
+  @Column(name = "address_line1", nullable = false, length =
+      ModelConstants.LEN_200)
+  private String addressLine1;
 
-  @Column(length = 200)
-  private String address_line2;
+  /**
+   * Street address line 2.
+   */
+  @Column(name = "address_line2", length = ModelConstants.LEN_200)
+  private String addressLine2;
 
-  @Column(nullable = false, length = 120)
+  /**
+   * City name.
+   */
+  @Column(nullable = false, length = ModelConstants.LEN_120)
   private String city;
 
-  @Column(length = 120)
+  /**
+   * State or province.
+   */
+  @Column(length = ModelConstants.LEN_120)
   private String state;
 
-  @Column(nullable = false, length = 120)
+  /**
+   * Country name.
+   */
+  @Column(nullable = false, length = ModelConstants.LEN_120)
   private String country;
 
-  @Column(length = 20)
-  private String postal_code;
+  /**
+   * Postal or ZIP code.
+   */
+  @Column(name = "postal_code", length = ModelConstants.LEN_20)
+  private String postalCode;
 
-  // DECIMAL(2,1)
-  @Column(precision = 2, scale = 1)
-  private BigDecimal star_rating;
+  /**
+   * Star rating, stored as DECIMAL(2,1).
+   */
+  @Column(name = "star_rating", precision = ModelConstants.P2, scale =
+      ModelConstants.S1)
+  private BigDecimal starRating;
 
+  /**
+   * Creation timestamp managed by Hibernate.
+   */
   @CreationTimestamp
-  @Column(nullable = false)
-  private LocalDateTime created_at;
+  @Column(name = "created_at", nullable = false)
+  private LocalDateTime createdAt;
 
+  /**
+   * Update timestamp managed by Hibernate.
+   */
   @UpdateTimestamp
-  @Column(nullable = false)
-  private LocalDateTime updated_at;
+  @Column(name = "updated_at", nullable = false)
+  private LocalDateTime updatedAt;
 }
