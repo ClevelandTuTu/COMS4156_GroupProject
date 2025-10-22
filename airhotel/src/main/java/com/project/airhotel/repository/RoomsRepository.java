@@ -10,19 +10,47 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * Spring Data JPA repository for Rooms. Provides CRUD operations plus custom
+ * queries scoped by hotel, status filtering, and room-number existence checks
+ * within a hotel.
+ * <p>
+ * Author: Ziyang Su Version: 1.0.0
  */
 @Repository
 public interface RoomsRepository extends JpaRepository<Rooms, Long> {
-  @Query("SELECT r FROM Rooms r WHERE r.hotel_id = :hotelId")
+
+  /**
+   * Returns all rooms that belong to the specified hotel.
+   *
+   * @param hotelId hotel identifier
+   * @return list of rooms under the hotel
+   */
+  @Query("SELECT r FROM Rooms r WHERE r.hotelId = :hotelId")
   List<Rooms> findByHotelId(@Param("hotelId") Long hotelId);
 
-  @Query("SELECT r FROM Rooms r WHERE r.hotel_id = :hotelId AND r.status = :status")
+  /**
+   * Returns rooms for a hotel filtered by status.
+   *
+   * @param hotelId hotel identifier
+   * @param status  desired room status
+   * @return list of rooms matching the hotel and status
+   */
+  @Query("SELECT r FROM Rooms r WHERE r.hotelId = :hotelId AND r.status = "
+      + ":status")
   List<Rooms> findByHotelIdAndStatus(@Param("hotelId") Long hotelId,
                                      @Param("status") RoomStatus status);
 
-  @Query("SELECT COUNT(r) > 0 FROM Rooms r WHERE r.hotel_id = :hotelId AND r.room_number = :roomNumber")
+  /**
+   * Checks whether a room number already exists within the given hotel. Useful
+   * for enforcing per-hotel room-number uniqueness.
+   *
+   * @param hotelId    hotel identifier
+   * @param roomNumber room number to test
+   * @return true if a room with the same number exists under the hotel, false
+   * otherwise
+   */
+  @Query("SELECT COUNT(r) > 0 FROM Rooms r WHERE r.hotelId = :hotelId AND r"
+      + ".roomNumber = :roomNumber")
   boolean existsByHotelIdAndRoomNumber(@Param("hotelId") Long hotelId,
                                        @Param("roomNumber") String roomNumber);
 }

@@ -1,37 +1,84 @@
 package com.project.airhotel.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+/**
+ * Per-night pricing breakdown for a reservation, including tax and discounts,
+ * stored in the same currency as the reservation.
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "reservations_nightly_prices", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_resnight_res_date", columnNames = {"reservation_id","stay_date"})
+    @UniqueConstraint(name = "uq_resnight_res_date", columnNames = {
+        "reservation_id", "stay_date"})
 })
 public class ReservationsNightlyPrices {
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable=false)
-  private Long reservation_id;
+  /**
+   * Owning reservation id.
+   */
+  @Column(nullable = false)
+  private Long reservationId;
 
-  @Column(nullable=false)
-  private LocalDate stay_date;
+  /**
+   * The night covered by this price row.
+   */
+  @Column(nullable = false)
+  private LocalDate stayDate;
 
-  private Long room_type_id;
+  /**
+   * Room type id used for the price, if captured.
+   */
+  private Long roomTypeId;
 
-  @Column(nullable=false, precision = 12, scale = 2)
+  /**
+   * Base price amount for the night.
+   */
+  @Column(nullable = false, precision = ModelConstants.P12, scale =
+      ModelConstants.S2)
   private BigDecimal price;
 
-  @Column(nullable=false, precision = 12, scale = 2)
+  /**
+   * Discount amount for the night.
+   */
+  @Builder.Default
+  @Column(nullable = false, precision = ModelConstants.P12, scale =
+      ModelConstants.S2)
   private BigDecimal discount = BigDecimal.ZERO;
 
-  @Column(nullable=false, precision = 12, scale = 2)
+  /**
+   * Tax amount for the night.
+   */
+  @Builder.Default
+  @Column(nullable = false, precision = ModelConstants.P12, scale =
+      ModelConstants.S2)
   private BigDecimal tax = BigDecimal.ZERO;
 
-  @Column(nullable=false, columnDefinition = "CHAR(3)")
+  /**
+   * ISO 4217 currency code, 3 letters.
+   */
+  @Column(nullable = false, columnDefinition = "CHAR(3)")
   private String currency;
 }

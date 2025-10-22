@@ -2,70 +2,152 @@ package com.project.airhotel.model;
 
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+/**
+ * Reservation master including guest counts, dates, currency and upgrade
+ * status. Some fields may be null until assignment.
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "reservations", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_res_client_src_code", columnNames = {"client_id","source_reservation_code"})
+    @UniqueConstraint(name = "uq_res_client_src_code", columnNames = {
+        "client_id", "source_reservation_code"})
 })
 public class Reservations {
+  /**
+   * Surrogate primary key.
+   */
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private Long client_id;
-  private Long user_id;
+  /**
+   * Owning client id if originated by a client integration.
+   */
+  private Long clientId;
 
-  @Column(nullable=false)
-  private Long hotel_id;
+  /**
+   * User id of the guest if known.
+   */
+  private Long userId;
 
-  @Column(nullable=false)
-  private Long room_type_id;
+  /**
+   * Hotel id for the reservation.
+   */
+  @Column(nullable = false)
+  private Long hotelId;
 
-  private Long room_id;
+  /**
+   * Reserved room type id.
+   */
+  @Column(nullable = false)
+  private Long roomTypeId;
 
+  /**
+   * Assigned room id, if allocated.
+   */
+  private Long roomId;
+
+  /**
+   * Workflow status of the reservation.
+   */
+  @Builder.Default
   @Enumerated(EnumType.STRING)
-  @Column(nullable=false, length=20)
+  @Column(nullable = false, length = ModelConstants.LEN_20)
   private ReservationStatus status = ReservationStatus.PENDING;
 
-  @Column(nullable=false)
-  private LocalDate check_in_date;
+  /**
+   * Check-in date.
+   */
+  @Column(nullable = false)
+  private LocalDate checkInDate;
 
-  @Column(nullable=false)
-  private LocalDate check_out_date;
+  /**
+   * Check-out date.
+   */
+  @Column(nullable = false)
+  private LocalDate checkOutDate;
 
-  @Column(nullable=false)
+  /**
+   * Number of nights for the stay.
+   */
+  @Column(nullable = false)
   private Integer nights;
 
-  @Column(nullable=false)
-  private Integer num_guests;
+  /**
+   * Number of guests.
+   */
+  @Column(nullable = false)
+  private Integer numGuests;
 
-  @Column(nullable=false, columnDefinition = "CHAR(3)")
+  /**
+   * ISO 4217 currency code, 3 letters.
+   */
+  @Column(nullable = false, columnDefinition = "CHAR(3)")
   private String currency;
 
-  @Column(nullable=false, precision = 12, scale = 2)
-  private BigDecimal price_total;
+  /**
+   * Total price in currency minor units scale 2.
+   */
+  @Column(nullable = false, precision = ModelConstants.P12, scale =
+      ModelConstants.S2)
+  private BigDecimal priceTotal;
 
-  @Column(length=100)
-  private String source_reservation_code;
+  /**
+   * Source reservation code provided by external system.
+   */
+  @Column(length = ModelConstants.LEN_100)
+  private String sourceReservationCode;
 
+  /**
+   * Upgrade eligibility and status.
+   */
+  @Builder.Default
   @Enumerated(EnumType.STRING)
-  @Column(nullable=false, length=20)
-  private UpgradeStatus upgrade_status = UpgradeStatus.NOT_ELIGIBLE;
+  @Column(nullable = false, length = ModelConstants.LEN_20)
+  private UpgradeStatus upgradeStatus = UpgradeStatus.NOT_ELIGIBLE;
 
+  /**
+   * Free-form notes for back office use.
+   */
   @Column(columnDefinition = "text")
   private String notes;
 
+  /**
+   * Creation timestamp managed by Hibernate.
+   */
   @CreationTimestamp
-  @Column(nullable=false)
-  private LocalDateTime created_at;
+  @Column(nullable = false)
+  private LocalDateTime createdAt;
 
-  private LocalDateTime upgraded_at;
-  private LocalDateTime canceled_at;
+  /**
+   * Timestamp when an upgrade was applied.
+   */
+  private LocalDateTime upgradedAt;
+
+  /**
+   * Timestamp when the reservation was canceled.
+   */
+  private LocalDateTime canceledAt;
 }

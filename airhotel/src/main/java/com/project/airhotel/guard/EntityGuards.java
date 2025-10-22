@@ -13,56 +13,137 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * Entity boundary guards for domain operations. Centralizes existence checks
+ * and ownership validations across hotels, rooms, room types, and reservations.
+ * Methods throw NotFoundException for missing entities and BadRequestException
+ * for scope or ownership violations.
  */
 @Component
 @RequiredArgsConstructor
 public class EntityGuards {
+
+  /**
+   * Repository for hotel existence checks.
+   */
   private final HotelsRepository hotelsRepository;
+
+  /**
+   * Repository for loading and validating room-type ownership.
+   */
   private final RoomTypesRepository roomTypesRepository;
+
+  /**
+   * Repository for loading reservations and validating hotel scope.
+   */
   private final ReservationsRepository reservationsRepository;
+
+  /**
+   * Repository for loading rooms and validating hotel scope.
+   */
   private final RoomsRepository roomsRepository;
 
-  public void ensureHotelExists(Long hotelId) {
+  /**
+   * Ensures that a hotel exists.
+   *
+   * @param hotelId hotel identifier
+   * @throws NotFoundException when the hotel does not exist
+   */
+  public void ensureHotelExists(final Long hotelId) {
     if (!hotelsRepository.existsById(hotelId)) {
       throw new NotFoundException("Hotel does not exist: " + hotelId);
     }
   }
 
-  public Rooms getRoomInHotelOrThrow(Long hotelId, Long roomId) {
+  /**
+   * Resolves a room by id and asserts it belongs to the given hotel.
+   *
+   * @param hotelId expected owning hotel id
+   * @param roomId  room id to resolve
+   * @return the resolved room
+   * @throws NotFoundException   when the room does not exist or the hotel does
+   *                             not exist
+   * @throws BadRequestException when the room does not belong to the given
+   *                             hotel
+   */
+  public Rooms getRoomInHotelOrThrow(final Long hotelId, final Long roomId) {
     ensureHotelExists(hotelId);
-    Rooms room = roomsRepository.findById(roomId)
-        .orElseThrow(() -> new NotFoundException("Room Id does not exist: " + roomId));
-    if (!room.getHotel_id().equals(hotelId)) {
+    final Rooms room = roomsRepository.findById(roomId)
+        .orElseThrow(()
+            -> new NotFoundException("Room Id does not exist: " + roomId));
+    if (!room.getHotelId().equals(hotelId)) {
       throw new BadRequestException("Room does not belong to this hotel.");
     }
     return room;
   }
 
-  public Reservations getReservationInHotelOrThrow(Long hotelId, Long reservationId) {
+  /**
+   * Resolves a reservation by id and asserts it belongs to the given hotel.
+   *
+   * @param hotelId       expected owning hotel id
+   * @param reservationId reservation id to resolve
+   * @return the resolved reservation
+   * @throws NotFoundException   when the reservation does not exist or the
+   *                             hotel does not exist
+   * @throws BadRequestException when the reservation does not belong to the
+   *                             given hotel
+   */
+  public Reservations getReservationInHotelOrThrow(final Long hotelId,
+                                                   final Long reservationId) {
     ensureHotelExists(hotelId);
-    Reservations r = reservationsRepository.findById(reservationId)
-        .orElseThrow(() -> new NotFoundException("Reservation does not exist: " + reservationId));
-    if (!r.getHotel_id().equals(hotelId)) {
-      throw new BadRequestException("This reservation does not belong to this hotel.");
+    final Reservations r = reservationsRepository.findById(reservationId)
+        .orElseThrow(()
+            -> new NotFoundException("Reservation does not exist:"
+            + " " + reservationId));
+    if (!r.getHotelId().equals(hotelId)) {
+      throw new BadRequestException("This reservation does not belong to this"
+          + " hotel.");
     }
     return r;
   }
 
-  public void ensureRoomTypeInHotelOrThrow(Long hotelId, Long roomTypeId) {
+  /**
+   * Ensures a room type exists and belongs to the given hotel.
+   *
+   * @param hotelId    expected owning hotel id
+   * @param roomTypeId room type id to validate
+   * @throws NotFoundException   when the room type does not exist or the hotel
+   *                             does not exist
+   * @throws BadRequestException when the room type does not belong to the given
+   *                             hotel
+   */
+  public void ensureRoomTypeInHotelOrThrow(final Long hotelId,
+                                           final Long roomTypeId) {
     ensureHotelExists(hotelId);
-    RoomTypes rt = roomTypesRepository.findById(roomTypeId)
-        .orElseThrow(() -> new NotFoundException("Room type does not exist: " + roomTypeId));
-    if (!rt.getHotel_id().equals(hotelId)) {
-      throw new BadRequestException("Room type does not belong to hotel " + hotelId);
+    final RoomTypes rt = roomTypesRepository.findById(roomTypeId)
+        .orElseThrow(()
+            -> new NotFoundException("Room type does not exist: "
+            + roomTypeId));
+    if (!rt.getHotelId().equals(hotelId)) {
+      throw new BadRequestException("Room type does not belong to hotel "
+          + hotelId);
     }
   }
 
-  public void ensureRoomBelongsToHotelAndType(Long hotelId, Long roomId, Long expectedRoomTypeId) {
-    Rooms room = getRoomInHotelOrThrow(hotelId, roomId);
-    if (expectedRoomTypeId != null && !room.getRoom_type_id().equals(expectedRoomTypeId)) {
-      throw new BadRequestException("Room's type does not match expected roomTypeId.");
+  /**
+   * Ensures a concrete room belongs to the given hotel and, if an expected room
+   * type id is provided, that the room's type matches the expected type.
+   *
+   * @param hotelId            expected owning hotel id
+   * @param roomId             room id to validate
+   * @param expectedRoomTypeId optional expected room type id; when non-null it
+   *                           must match the room's type
+   * @throws NotFoundException   when the room or hotel does not exist
+   * @throws BadRequestException when the room does not belong to the hotel or
+   *                             its type does not match
+   */
+  public void ensureRoomBelongsToHotelAndType(final Long hotelId,
+                                              final Long roomId,
+                                              final Long expectedRoomTypeId) {
+    final Rooms room = getRoomInHotelOrThrow(hotelId, roomId);
+    if (expectedRoomTypeId != null
+        && !room.getRoomTypeId().equals(expectedRoomTypeId)) {
+      throw new BadRequestException("Room's type does not match expected "
+          + "roomTypeId.");
     }
   }
 }

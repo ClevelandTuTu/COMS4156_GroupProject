@@ -1,9 +1,16 @@
 package com.project.airhotel.exception;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * Domain-level unchecked exception representing a 404 Not Found. It indicates
+ * that the requested resource cannot be located.
  */
 public class NotFoundException extends RuntimeException {
-  public NotFoundException(String message) { super(message); }
+  /**
+   * Construct a NotFoundException with a human-readable message.
+   *
+   * @param message explanation of the missing resource
+   */
+  public NotFoundException(final String message) {
+    super(message);
+  }
 }

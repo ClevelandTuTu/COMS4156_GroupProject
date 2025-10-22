@@ -7,41 +7,70 @@ import org.springframework.stereotype.Component;
 
 import java.time.ZoneOffset;
 
+/**
+ * Maps Reservations entities to API response DTOs. Provides both summary and
+ * detail projections used by user/manager controllers.
+ * <p>
+ * Mapping notes:
+ * - created_at is converted to Instant in UTC (ZoneOffset.UTC).
+ * - roomNumber is currently set to null in the detail DTO and can be populated
+ * later if/when the association is available in the Reservations aggregate or
+ * via a join.
+ */
 @Component
 public class ReservationMapper {
 
-  public ReservationSummaryResponse toSummary(Reservations r) {
-    ReservationSummaryResponse dto = new ReservationSummaryResponse();
+  /**
+   * Maps a Reservations entity to a lightweight summary DTO.
+   * <p>
+   * Fields mapped: id, status, upgradeStatus, checkInDate, checkOutDate,
+   * nights, numGuests, priceTotal, createdAt (converted to UTC Instant when
+   * non-null).
+   *
+   * @param r the Reservations entity to convert
+   * @return a ReservationSummaryResponse populated from the entity
+   */
+  public ReservationSummaryResponse toSummary(final Reservations r) {
+    final ReservationSummaryResponse dto = new ReservationSummaryResponse();
     dto.setId(r.getId());
     dto.setStatus(r.getStatus());
-    dto.setUpgradeStatus(r.getUpgrade_status());
-    dto.setCheckInDate(r.getCheck_in_date());
-    dto.setCheckOutDate(r.getCheck_out_date());
+    dto.setUpgradeStatus(r.getUpgradeStatus());
+    dto.setCheckInDate(r.getCheckInDate());
+    dto.setCheckOutDate(r.getCheckOutDate());
     dto.setNights(r.getNights());
-    dto.setNumGuests(r.getNum_guests());
-    dto.setPriceTotal(r.getPrice_total());
-    if (r.getCreated_at() != null) {
-      dto.setCreatedAt(r.getCreated_at().toInstant(ZoneOffset.UTC));
+    dto.setNumGuests(r.getNumGuests());
+    dto.setPriceTotal(r.getPriceTotal());
+    if (r.getCreatedAt() != null) {
+      dto.setCreatedAt(r.getCreatedAt().toInstant(ZoneOffset.UTC));
     }
     return dto;
   }
 
-  public ReservationDetailResponse toDetail(Reservations r) {
-    ReservationDetailResponse dto = new ReservationDetailResponse();
+  /**
+   * Maps a Reservations entity to a detailed DTO.
+   * <p>
+   * Fields mapped: id, status, upgradeStatus, checkInDate, checkOutDate,
+   * nights, numGuests, currency, priceTotal, roomNumber (currently null),
+   * createdAt (UTC Instant when non-null).
+   *
+   * @param r the Reservations entity to convert
+   * @return a ReservationDetailResponse populated from the entity
+   */
+  public ReservationDetailResponse toDetail(final Reservations r) {
+    final ReservationDetailResponse dto = new ReservationDetailResponse();
     dto.setId(r.getId());
     dto.setStatus(r.getStatus());
-    dto.setUpgradeStatus(r.getUpgrade_status());
-    dto.setCheckInDate(r.getCheck_in_date());
-    dto.setCheckOutDate(r.getCheck_out_date());
+    dto.setUpgradeStatus(r.getUpgradeStatus());
+    dto.setCheckInDate(r.getCheckInDate());
+    dto.setCheckOutDate(r.getCheckOutDate());
     dto.setNights(r.getNights());
-    dto.setNumGuests(r.getNum_guests());
+    dto.setNumGuests(r.getNumGuests());
     dto.setCurrency(r.getCurrency());
-    dto.setPriceTotal(r.getPrice_total());
+    dto.setPriceTotal(r.getPriceTotal());
     dto.setRoomNumber(null);
-    if (r.getCreated_at() != null) {
-      dto.setCreatedAt(r.getCreated_at().toInstant(ZoneOffset.UTC));
+    if (r.getCreatedAt() != null) {
+      dto.setCreatedAt(r.getCreatedAt().toInstant(ZoneOffset.UTC));
     }
-    // nightlyPrices/statusHistory 可在将来聚合查询后设置
     return dto;
   }
 }
