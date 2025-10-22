@@ -2,17 +2,33 @@ package com.project.airhotel.model;
 
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "reservations", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_res_client_src_code", columnNames = {"client_id","source_reservation_code"})
+    @UniqueConstraint(name = "uq_res_client_src_code", columnNames = {
+        "client_id", "source_reservation_code"})
 })
 public class Reservations {
   @Id
@@ -22,48 +38,48 @@ public class Reservations {
   private Long client_id;
   private Long user_id;
 
-  @Column(nullable=false)
+  @Column(nullable = false)
   private Long hotel_id;
 
-  @Column(nullable=false)
+  @Column(nullable = false)
   private Long room_type_id;
 
   private Long room_id;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable=false, length=20)
+  @Column(nullable = false, length = 20)
   private ReservationStatus status = ReservationStatus.PENDING;
 
-  @Column(nullable=false)
+  @Column(nullable = false)
   private LocalDate check_in_date;
 
-  @Column(nullable=false)
+  @Column(nullable = false)
   private LocalDate check_out_date;
 
-  @Column(nullable=false)
+  @Column(nullable = false)
   private Integer nights;
 
-  @Column(nullable=false)
+  @Column(nullable = false)
   private Integer num_guests;
 
-  @Column(nullable=false, columnDefinition = "CHAR(3)")
+  @Column(nullable = false, columnDefinition = "CHAR(3)")
   private String currency;
 
-  @Column(nullable=false, precision = 12, scale = 2)
+  @Column(nullable = false, precision = 12, scale = 2)
   private BigDecimal price_total;
 
-  @Column(length=100)
+  @Column(length = 100)
   private String source_reservation_code;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable=false, length=20)
+  @Column(nullable = false, length = 20)
   private UpgradeStatus upgrade_status = UpgradeStatus.NOT_ELIGIBLE;
 
   @Column(columnDefinition = "text")
   private String notes;
 
   @CreationTimestamp
-  @Column(nullable=false)
+  @Column(nullable = false)
   private LocalDateTime created_at;
 
   private LocalDateTime upgraded_at;
