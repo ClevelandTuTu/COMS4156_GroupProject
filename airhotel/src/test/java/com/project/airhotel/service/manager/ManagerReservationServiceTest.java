@@ -1,7 +1,7 @@
 package com.project.airhotel.service.manager;
 
-import com.project.airhotel.dto.reservations.ApplyUpgradeRequest;
-import com.project.airhotel.dto.reservations.ReservationUpdateRequest;
+import com.project.airhotel.dto.reservation.ApplyUpgradeRequest;
+import com.project.airhotel.dto.reservation.ReservationUpdateRequest;
 import com.project.airhotel.exception.BadRequestException;
 import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.model.Reservations;
