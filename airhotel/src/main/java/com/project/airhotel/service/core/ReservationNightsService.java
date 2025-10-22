@@ -7,15 +7,15 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 
 /**
- * Service that recalculates the number of nights for a reservation
- * based on check-in and check-out dates and updates the entity.
+ * Service that recalculates the number of nights for a reservation based on
+ * check-in and check-out dates and updates the entity.
  */
 @Service
 public class ReservationNightsService {
   /**
    * Recalculate nights as the difference in epoch days and update the
-   * reservation.
-   * The check-out date must be strictly later than the check-in date.
+   * reservation. The check-out date must be strictly later than the check-in
+   * date.
    *
    * @param r        reservation entity to update
    * @param checkIn  check-in date, required
