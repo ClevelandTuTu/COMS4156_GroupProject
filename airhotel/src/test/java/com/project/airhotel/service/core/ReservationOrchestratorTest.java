@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.InOrder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,8 +36,8 @@ class ReservationOrchestratorTest {
   @InjectMocks
   private ReservationOrchestrator orchestrator;
 
-  private Reservations baseReservation(ReservationStatus status) {
-    Reservations r = new Reservations();
+  private Reservations baseReservation(final ReservationStatus status) {
+    final Reservations r = new Reservations();
     r.setId(100L);
     r.setStatus(status);
     r.setHotelId(1L);
@@ -50,12 +51,10 @@ class ReservationOrchestratorTest {
   @Test
   @DisplayName("cancel → branch: status == CANCELED (early return, no side effects)")
   void cancel_alreadyCanceled_noop() {
-    // Testing method: cancel; branch: r.status == CANCELED → return immediately
-    Reservations r = baseReservation(CANCELED);
+    final Reservations r = baseReservation(CANCELED);
 
     orchestrator.cancel(r, "any-reason", 9L);
 
-    // No inventory release, no status change, canceled_at unchanged (null)
     verifyNoInteractions(inventoryService, statusService);
     assertNull(r.getCanceledAt(), "canceled_at should remain null on early return");
   }
@@ -63,10 +62,9 @@ class ReservationOrchestratorTest {
   @Test
   @DisplayName("cancel → branch: status == CHECKED_OUT (throws BadRequestException)")
   void cancel_checkedOut_throws() {
-    // Testing method: cancel; branch: r.status == CHECKED_OUT → throw
-    Reservations r = baseReservation(CHECKED_OUT);
+    final Reservations r = baseReservation(CHECKED_OUT);
 
-    BadRequestException ex = assertThrows(
+    final BadRequestException ex = assertThrows(
         BadRequestException.class,
         () -> orchestrator.cancel(r, "ops", 8L)
     );
@@ -79,31 +77,85 @@ class ReservationOrchestratorTest {
   @ParameterizedTest
   @EnumSource(value = ReservationStatus.class, names = {"PENDING", "CONFIRMED", "CHECKED_IN"})
   @DisplayName("cancel → branch: cancelable statuses (PENDING/CONFIRMED/CHECKED_IN) - happy path")
-  void cancel_happyPath_cancelableStatuses(ReservationStatus initialStatus) {
-    // Testing method: cancel; branch: happy path for cancelable statuses
-    Reservations r = baseReservation(initialStatus);
-    String reason = "user-request";
-    Long changer = 7L;
+  void cancel_happyPath_cancelableStatuses(final ReservationStatus initialStatus) {
+    final Reservations r = baseReservation(initialStatus);
+    final String reason = "user-request";
+    final Long changer = 7L;
 
-    // Time window to assert canceled_at is set "around now"
-    LocalDateTime before = LocalDateTime.now();
+    final LocalDateTime before = LocalDateTime.now();
     orchestrator.cancel(r, reason, changer);
-    LocalDateTime after = LocalDateTime.now();
+    final LocalDateTime after = LocalDateTime.now();
 
-    // 1) inventory released with exact parameters
     verify(inventoryService, times(1))
         .releaseRange(r.getHotelId(), r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
 
-    // 2) canceled_at set within [before, after]
     assertNotNull(r.getCanceledAt(), "canceled_at should be set");
     assertFalse(r.getCanceledAt().isBefore(before), "canceled_at should not be before 'before'");
     assertFalse(r.getCanceledAt().isAfter(after), "canceled_at should not be after 'after'");
 
-    // 3) status change invoked to CANCELED with reason & user id
     verify(statusService, times(1))
         .changeStatus(r, CANCELED, reason, changer);
 
-    // no further interactions
     verifyNoMoreInteractions(inventoryService, statusService);
+  }
+
+  @Test
+  @DisplayName("cancel → null reason and null userId")
+  void cancel_nullReasonNullUser() {
+    final Reservations r = baseReservation(ReservationStatus.CONFIRMED);
+
+    orchestrator.cancel(r, null, null);
+
+    verify(inventoryService, times(1))
+        .releaseRange(r.getHotelId(), r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
+    verify(statusService, times(1))
+        .changeStatus(r, CANCELED, null, null);
+    assertNotNull(r.getCanceledAt());
+  }
+
+  @Test
+  @DisplayName("cancel → operations occur in order: releaseRange then changeStatus")
+  void cancel_order_release_then_status() {
+    final Reservations r = baseReservation(ReservationStatus.PENDING);
+    final String reason = "seq";
+    final Long changer = 42L;
+
+    orchestrator.cancel(r, reason, changer);
+
+    final InOrder inOrder = inOrder(inventoryService, statusService);
+    inOrder.verify(inventoryService).releaseRange(r.getHotelId(), r.getRoomTypeId(),
+        r.getCheckInDate(), r.getCheckOutDate());
+    inOrder.verify(statusService).changeStatus(r, CANCELED, reason, changer);
+  }
+
+  @Test
+  @DisplayName("cancel → changeStatus throws; inventory released, canceledAt set, exception propagated")
+  void cancel_changeStatusThrows_propagates() {
+    final Reservations r = baseReservation(ReservationStatus.CONFIRMED);
+    final String reason = "x";
+    final Long changer = 5L;
+
+    doThrow(new RuntimeException("boom")).when(statusService)
+        .changeStatus(eq(r), eq(CANCELED), eq(reason), eq(changer));
+
+    assertThrows(RuntimeException.class, () -> orchestrator.cancel(r, reason, changer));
+
+    verify(inventoryService, times(1))
+        .releaseRange(r.getHotelId(), r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
+    assertNotNull(r.getCanceledAt());
+  }
+
+  @Test
+  @DisplayName("cancel → inventory release throws; canceledAt not set and no status change")
+  void cancel_inventoryThrows_before() {
+    final Reservations r = baseReservation(ReservationStatus.CONFIRMED);
+
+    doThrow(new RuntimeException("inv-err")).when(inventoryService)
+        .releaseRange(r.getHotelId(), r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
+
+    assertThrows(RuntimeException.class, () -> orchestrator.cancel(r, "r", 1L));
+
+    verify(statusService, never()).changeStatus(any(), any(), any(), any());
+    assertNull(r.getCanceledAt());
   }
 }

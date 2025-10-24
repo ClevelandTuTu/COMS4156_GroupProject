@@ -37,8 +37,8 @@ class ReservationStatusServiceTest {
   @InjectMocks
   ReservationStatusService service;
 
-  private Reservations reservationWithStatus(ReservationStatus status) {
-    Reservations r = new Reservations();
+  private Reservations reservationWithStatus(final ReservationStatus status) {
+    final Reservations r = new Reservations();
     r.setId(42L);
     r.setStatus(status);
     return r;
@@ -48,10 +48,10 @@ class ReservationStatusServiceTest {
   @DisplayName("changeStatus → branch: illegal transition (statusMachine.canTransit=false) -> throws and no persistence")
   void changeStatus_illegalTransition_throws_noSideEffects() {
     // Testing method: changeStatus; branch: illegal transition
-    Reservations r = reservationWithStatus(PENDING);
+    final Reservations r = reservationWithStatus(PENDING);
     when(statusMachine.canTransit(PENDING, CHECKED_IN)).thenReturn(false);
 
-    BadRequestException ex = assertThrows(
+    final BadRequestException ex = assertThrows(
         BadRequestException.class,
         () -> service.changeStatus(r, CHECKED_IN, "reason", 100L)
     );
@@ -67,12 +67,12 @@ class ReservationStatusServiceTest {
   @DisplayName("changeStatus → branch: legal transition (PENDING -> CONFIRMED) with reason & userId")
   void changeStatus_legalTransition_persistsReservationAndHistory() {
     // Testing method: changeStatus; branch: legal transition + non-null reason/userId
-    Reservations r = reservationWithStatus(PENDING);
+    final Reservations r = reservationWithStatus(PENDING);
     when(statusMachine.canTransit(PENDING, CONFIRMED)).thenReturn(true);
 
     // verify the object passed to repository has status set to target before save
     Mockito.lenient().when(reservationsRepository.save(any(Reservations.class))).thenAnswer(inv -> {
-      Reservations arg = inv.getArgument(0);
+      final Reservations arg = inv.getArgument(0);
       // status should already be set to CONFIRMED when calling save
       assertEquals(CONFIRMED, arg.getStatus(), "Reservation must be updated to target status before saving");
       // simulate DB saved object (could be same instance or a copy)
@@ -80,11 +80,11 @@ class ReservationStatusServiceTest {
     });
 
     // capture history entity to assert its fields
-    ArgumentCaptor<ReservationsStatusHistory> hCap = ArgumentCaptor.forClass(ReservationsStatusHistory.class);
+    final ArgumentCaptor<ReservationsStatusHistory> hCap = ArgumentCaptor.forClass(ReservationsStatusHistory.class);
 
-    LocalDateTime before = LocalDateTime.now();
-    Reservations saved = service.changeStatus(r, CONFIRMED, "manual-approve", 999L);
-    LocalDateTime after = LocalDateTime.now();
+    final LocalDateTime before = LocalDateTime.now();
+    final Reservations saved = service.changeStatus(r, CONFIRMED, "manual-approve", 999L);
+    final LocalDateTime after = LocalDateTime.now();
 
     // asserts on returned entity
     assertNotNull(saved);
@@ -97,7 +97,7 @@ class ReservationStatusServiceTest {
     verify(statusMachine, times(1)).canTransit(PENDING, CONFIRMED);
 
     // assert history fields
-    ReservationsStatusHistory h = hCap.getValue();
+    final ReservationsStatusHistory h = hCap.getValue();
     assertEquals(42L, h.getReservationId());
     assertEquals(PENDING, h.getFromStatus());
     assertEquals(CONFIRMED, h.getToStatus());
@@ -112,12 +112,12 @@ class ReservationStatusServiceTest {
   @DisplayName("changeStatus → branch: legal transition (CONFIRMED -> CHECKED_IN) with null reason & null userId")
   void changeStatus_legalTransition_nullReasonAndUser() {
     // Testing method: changeStatus; branch: legal transition + null reason/userId
-    Reservations r = reservationWithStatus(CONFIRMED);
+    final Reservations r = reservationWithStatus(CONFIRMED);
     when(statusMachine.canTransit(CONFIRMED, CHECKED_IN)).thenReturn(true);
 
     when(reservationsRepository.save(any(Reservations.class))).thenAnswer(inv -> inv.getArgument(0));
 
-    ArgumentCaptor<ReservationsStatusHistory> hCap = ArgumentCaptor.forClass(ReservationsStatusHistory.class);
+    final ArgumentCaptor<ReservationsStatusHistory> hCap = ArgumentCaptor.forClass(ReservationsStatusHistory.class);
 
     service.changeStatus(r, CHECKED_IN, null, null);
 
@@ -127,11 +127,46 @@ class ReservationStatusServiceTest {
 
     // history persisted with null fields for reason/user
     verify(historyRepository, times(1)).save(hCap.capture());
-    ReservationsStatusHistory h = hCap.getValue();
+    final ReservationsStatusHistory h = hCap.getValue();
     assertEquals(CONFIRMED, h.getFromStatus());
     assertEquals(CHECKED_IN, h.getToStatus());
     assertNull(h.getReason());
     assertNull(h.getChangedByUserId());
     assertNotNull(h.getChangedAt());
   }
+
+  @Test
+  @DisplayName("changeStatus → repository save throws; no history is written and exception propagates")
+  void changeStatus_repositorySaveThrows_noHistory() {
+    final Reservations r = reservationWithStatus(PENDING);
+    when(statusMachine.canTransit(PENDING, CONFIRMED)).thenReturn(true);
+    when(reservationsRepository.save(any(Reservations.class)))
+        .thenThrow(new RuntimeException("db-error"));
+
+    assertThrows(RuntimeException.class,
+        () -> service.changeStatus(r, CONFIRMED, "x", 1L));
+
+    verify(historyRepository, never()).save(any(ReservationsStatusHistory.class));
+    assertEquals(CONFIRMED, r.getStatus());
+  }
+
+  @Test
+  @DisplayName("changeStatus → history uses saved entity id (not original)")
+  void changeStatus_historyUsesSavedId() {
+    final Reservations r = reservationWithStatus(PENDING);
+    r.setId(1L);
+    when(statusMachine.canTransit(PENDING, CONFIRMED)).thenReturn(true);
+
+    final Reservations persisted = reservationWithStatus(CONFIRMED);
+    persisted.setId(777L);
+    when(reservationsRepository.save(any(Reservations.class))).thenReturn(persisted);
+
+    final ArgumentCaptor<ReservationsStatusHistory> cap = ArgumentCaptor.forClass(ReservationsStatusHistory.class);
+    final Reservations out = service.changeStatus(r, CONFIRMED, null, null);
+
+    verify(historyRepository).save(cap.capture());
+    assertEquals(777L, cap.getValue().getReservationId());
+    assertEquals(CONFIRMED, out.getStatus());
+  }
+
 }
