@@ -41,6 +41,8 @@ Running in local machine:
 - Use Intellij for easier maven project management.
 - Run mvn clean install on terminal or using the Maven tool in Intellij.
 - Set up a run configuration for Application.
+- You need to download the .env file and set it to the environment variables for the cloud database and Google Auth.
+    Download at: https://drive.google.com/file/d/1zYrPjETGtAKodVH8Y8lzHW-6dtofgcCF/view?usp=sharing
 - Integration test with Postman by REST API endpoints.
 ---
 
@@ -128,6 +130,7 @@ Running in local machine:
 5. Under Cookie, copy the value
 6. In the header section of postman (or similar API testing tools), add a key (Cookie), and a value (JSESSIONID="The cookie value you got")
 7. With the cookie in the header section, you now have access to private endpoints
+8. Our test from postman: ![img.png](img.png)
 
 --- 
 
