@@ -34,7 +34,14 @@ ensuring that high-value customers receive appropriate benefits.
 ---
 
 ## 2. Instruction on Build and Run our application
-
+Running in local machine:
+- Install mvn package manager on machine.
+- By-default this will give you java version 25.
+- Configure JDK25 in the project structure.
+- Use Intellij for easier maven project management.
+- Run mvn clean install on terminal or using the Maven tool in Intellij.
+- Set up a run configuration for Application.
+- Integration test with Postman by REST API endpoints.
 ---
 
 ## 3. API Endpoints
