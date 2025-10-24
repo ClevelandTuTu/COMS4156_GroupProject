@@ -15,4 +15,12 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface HotelsRepository extends JpaRepository<Hotels, Long> {
+
+  /**
+   * Checks whether a hotel exists by its unique identifier.
+   *
+   * @param id the hotel ID to check
+   * @return true if a hotel with the given ID exists, false otherwise
+   */
+  boolean existsById(Long id);
 }

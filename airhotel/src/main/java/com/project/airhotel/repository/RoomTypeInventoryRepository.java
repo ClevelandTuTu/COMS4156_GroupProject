@@ -7,8 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,6 +19,7 @@ import java.util.Optional;
  * read uses pessimistic write locking to coordinate inventory updates safely
  * when multiple transactions target the same row.
  */
+@Repository
 public interface RoomTypeInventoryRepository
     extends JpaRepository<RoomTypeInventory, Long> {
 
@@ -48,4 +51,19 @@ public interface RoomTypeInventoryRepository
       @Param("hotelId") Long hotelId,
       @Param("roomTypeId") Long roomTypeId,
       @Param("stayDate") LocalDate stayDate);
+
+  /**
+   * Retrieves room type inventory records for a given hotel and stay date.
+   *
+   * @param hotelId the unique identifier of the hotel
+   * @param stayDate the specific date for which room type inventory
+   *                 is requested
+   * @return a list of {@link RoomTypeInventory} entries matching
+   *         the given hotel and date
+   */
+  List<RoomTypeInventory> findByHotelIdAndStayDate(
+      Long hotelId,
+      LocalDate stayDate
+  );
+
 }

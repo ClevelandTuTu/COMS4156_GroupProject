@@ -20,6 +20,23 @@ import java.util.List;
 public interface RoomsRepository extends JpaRepository<Rooms, Long> {
 
   /**
+   * Counts the total number of rooms belonging to a specific hotel.
+   *
+   * @param hotelId the unique identifier of the hotel
+   * @return the total number of rooms associated with the given hotel
+   */
+  long countByHotelId(Long hotelId);
+
+  /**
+   * Counts the number of rooms in a specific hotel filtered by their status.
+   *
+   * @param hotelId the unique identifier of the hotel
+   * @param status the room status (e.g., AVAILABLE, OCCUPIED, BLOCKED)
+   * @return the number of rooms in the hotel matching the given status
+   */
+  long countByHotelIdAndStatus(Long hotelId, RoomStatus status);
+
+  /**
    * Returns all rooms that belong to the specified hotel.
    *
    * @param hotelId hotel identifier
@@ -53,4 +70,6 @@ public interface RoomsRepository extends JpaRepository<Rooms, Long> {
       + ".roomNumber = :roomNumber")
   boolean existsByHotelIdAndRoomNumber(@Param("hotelId") Long hotelId,
                                        @Param("roomNumber") String roomNumber);
+
+
 }
