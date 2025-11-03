@@ -1,10 +1,11 @@
 package com.project.airhotel.service.core;
 
-import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.model.RoomTypeInventory;
-import com.project.airhotel.model.RoomTypes;
-import com.project.airhotel.repository.RoomTypeInventoryRepository;
-import com.project.airhotel.repository.RoomTypesRepository;
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.reservation.service.ReservationInventoryService;
+import com.project.airhotel.room.domain.RoomTypeInventory;
+import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
+import com.project.airhotel.room.repository.RoomTypesRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

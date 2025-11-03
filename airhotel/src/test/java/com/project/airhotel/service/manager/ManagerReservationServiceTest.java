@@ -1,15 +1,17 @@
 package com.project.airhotel.service.manager;
 
-import com.project.airhotel.dto.reservation.ApplyUpgradeRequest;
-import com.project.airhotel.dto.reservation.ReservationUpdateRequest;
-import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.guard.EntityGuards;
-import com.project.airhotel.model.Reservations;
-import com.project.airhotel.model.enums.ReservationStatus;
-import com.project.airhotel.model.enums.UpgradeStatus;
-import com.project.airhotel.repository.ReservationsRepository;
-import com.project.airhotel.service.core.ReservationOrchestrator;
-import com.project.airhotel.service.core.ReservationStatusService;
+import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.reservation.dto.ApplyUpgradeRequest;
+import com.project.airhotel.reservation.dto.ReservationUpdateRequest;
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.guard.EntityGuards;
+import com.project.airhotel.reservation.domain.Reservations;
+import com.project.airhotel.reservation.domain.enums.ReservationStatus;
+import com.project.airhotel.reservation.domain.enums.UpgradeStatus;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.reservation.service.ManagerReservationService;
+import com.project.airhotel.reservation.service.ReservationOrchestrator;
+import com.project.airhotel.reservation.service.ReservationStatusService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,10 +24,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.project.airhotel.model.enums.ReservationStatus.CANCELED;
-import static com.project.airhotel.model.enums.ReservationStatus.CHECKED_IN;
-import static com.project.airhotel.model.enums.ReservationStatus.CHECKED_OUT;
-import static com.project.airhotel.model.enums.ReservationStatus.CONFIRMED;
+import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CANCELED;
+import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_IN;
+import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_OUT;
+import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CONFIRMED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -138,10 +140,10 @@ class ManagerReservationServiceTest {
   @Test
   @DisplayName("listReservations → hotel not found (guard throws)")
   void listReservations_hotelNotFound() {
-    doThrow(new com.project.airhotel.exception.NotFoundException("hotel not found"))
+    doThrow(new NotFoundException("hotel not found"))
         .when(entityGuards).ensureHotelExists(99L);
 
-    assertThrows(com.project.airhotel.exception.NotFoundException.class,
+    assertThrows(NotFoundException.class,
         () -> service.listReservations(99L, null, null, null));
 
     verifyNoInteractions(reservationsRepository);
