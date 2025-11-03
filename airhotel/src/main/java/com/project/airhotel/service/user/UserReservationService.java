@@ -6,17 +6,15 @@ import com.project.airhotel.dto.reservation.ReservationDetailResponse;
 import com.project.airhotel.dto.reservation.ReservationSummaryResponse;
 import com.project.airhotel.exception.BadRequestException;
 import com.project.airhotel.exception.NotFoundException;
-import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.mapper.ReservationMapper;
 import com.project.airhotel.model.Reservations;
 import com.project.airhotel.repository.ReservationsRepository;
-import com.project.airhotel.service.core.ReservationInventoryService;
-import com.project.airhotel.service.core.ReservationNightsService;
+import com.project.airhotel.reservation.ReservationChangeAdapter;
+import com.project.airhotel.reservation.UserReservationPolicy;
 import com.project.airhotel.service.core.ReservationOrchestrator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -28,20 +26,13 @@ import java.util.List;
  * Author: Jing Wang Version: 1.0.0
  */
 @Service
+@RequiredArgsConstructor
 public class UserReservationService {
 
   /**
    * Repository to query and persist user reservations.
    */
   private final ReservationsRepository reservationsRepository;
-  /**
-   * Service that validates and sets stay dates and computed nights.
-   */
-  private final ReservationNightsService nightsService;
-  /**
-   * Service that reserves and releases room-type inventory for date ranges.
-   */
-  private final ReservationInventoryService inventoryService;
   /**
    * Orchestrator for compound flows such as cancelation.
    */
@@ -50,35 +41,6 @@ public class UserReservationService {
    * Mapper from Reservations entities to API response DTOs.
    */
   private final ReservationMapper mapper;
-  /**
-   * Guards that validate entity existence and ownership constraints.
-   */
-  private final EntityGuards entityGuards;
-
-  /**
-   * Constructs the user reservation service with required collaborators.
-   *
-   * @param reservationsRepo repository used to access Reservations
-   * @param nightsServ       service that recalculates nights from date ranges
-   * @param inventoryServ    service that adjusts inventory across ranges
-   * @param orches           orchestrator for cancelation flow
-   * @param map              mapper from Reservation entities to DTOs
-   * @param eGuards          guards ensuring hotel and room-type constraints
-   */
-  public UserReservationService(
-      final ReservationsRepository reservationsRepo,
-      final ReservationNightsService nightsServ,
-      final ReservationInventoryService inventoryServ,
-      final ReservationOrchestrator orches,
-      final ReservationMapper map,
-      final EntityGuards eGuards) {
-    this.reservationsRepository = reservationsRepo;
-    this.nightsService = nightsServ;
-    this.inventoryService = inventoryServ;
-    this.orchestrator = orches;
-    this.mapper = map;
-    this.entityGuards = eGuards;
-  }
 
   /**
    * Lists reservations that belong to the given user.
@@ -107,9 +69,9 @@ public class UserReservationService {
                                                     final Long id) {
     final Reservations r =
         reservationsRepository.findByIdAndUserId(id, userId)
-        .orElseThrow(()
-            -> new NotFoundException("Reservation not found: "
-            + id));
+            .orElseThrow(()
+                -> new NotFoundException("Reservation not found: "
+                + id));
     return mapper.toDetail(r);
   }
 
@@ -117,12 +79,11 @@ public class UserReservationService {
   //  because these code are used by manager reservation service
 
   /**
-   * Creates a reservation for the current user. Flow:
-   * - Guards ensure hotel and room type are valid and related
-   * - Validates number of guests and optional price total input
-   * - Sets dates and nights via nights service
-   * - Reserves inventory for the stay range
-   * - Persists the reservation and returns a detail DTO
+   * Creates a reservation for the current user. Flow: - Guards ensure hotel and
+   * room type are valid and related - Validates number of guests and optional
+   * price total input - Sets dates and nights via nights service - Reserves
+   * inventory for the stay range - Persists the reservation and returns a
+   * detail DTO
    * <p>
    * Note: total price calculation is intended to be handled by domain logic in
    * the future; for now the provided priceTotal is accepted after validation.
@@ -138,51 +99,17 @@ public class UserReservationService {
    *                                                          priceTotal is
    *                                                          negative
    */
-  @Transactional
   public ReservationDetailResponse createReservation(
       final Long userId,
       final CreateReservationRequest req) {
-    // note: calculate total prices instead of take it from input
-    entityGuards.ensureHotelExists(req.getHotelId());
-    entityGuards.ensureRoomTypeInHotelOrThrow(req.getHotelId(),
-        req.getRoomTypeId());
-
-    if (req.getNumGuests() == null || req.getNumGuests() <= 0) {
-      throw new BadRequestException("numGuests must be positive.");
-    }
-    if (req.getPriceTotal() != null && req.getPriceTotal().compareTo(
-        BigDecimal.ZERO) < 0) {
-      throw new BadRequestException("priceTotal must be non-negative.");
-    }
-
-    final Reservations r = new Reservations();
-    r.setUserId(userId);
-    r.setHotelId(req.getHotelId());
-    r.setRoomTypeId(req.getRoomTypeId());
-    r.setNumGuests(req.getNumGuests());
-    r.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
-    // note: do calculation rather than take from input
-    r.setPriceTotal(req.getPriceTotal());
-
-    // Calculate nights & write date
-    nightsService.recalcNightsOrThrow(r, req.getCheckInDate(),
-        req.getCheckOutDate());
-
-    // inventory verification + deduction
-    inventoryService.reserveRangeOrThrow(r.getHotelId(),
-        r.getRoomTypeId(),
-        r.getCheckInDate(),
-        r.getCheckOutDate());
-
-    final Reservations saved = reservationsRepository.save(r);
+    final Reservations saved = orchestrator.createReservation(userId, req);
     return mapper.toDetail(saved);
   }
 
   /**
-   * Partially updates a reservation owned by the user. Supported updates:
-   * - Date changes: release old inventory, recalc nights, reserve new
-   * inventory
-   * - Number of guests: must be positive
+   * Partially updates a reservation owned by the user. Supported updates: -
+   * Date changes: release old inventory, recalc nights, reserve new inventory -
+   * Number of guests: must be positive
    * <p>
    * Price recalculation is a planned enhancement and not included here.
    *
@@ -193,43 +120,19 @@ public class UserReservationService {
    * @throws NotFoundException   if reservation is not found for the user
    * @throws BadRequestException if numGuests is provided and not positive
    */
-  @Transactional
   public ReservationDetailResponse patchMyReservation(
       final Long userId,
       final Long id,
       final PatchReservationRequest req) {
-    final Reservations r =
-        reservationsRepository.findByIdAndUserId(id, userId)
-        .orElseThrow(()
-            -> new NotFoundException("Reservation not found: " + id));
 
-    if (req.getCheckInDate() != null || req.getCheckOutDate() != null) {
-      inventoryService.releaseRange(r.getHotelId(),
-          r.getRoomTypeId(),
-          r.getCheckInDate(),
-          r.getCheckOutDate());
-      final var newCheckIn = req.getCheckInDate() != null
-          ? req.getCheckInDate()
-          : r.getCheckInDate();
-      final var newCheckOut = req.getCheckOutDate() != null
-          ? req.getCheckOutDate()
-          : r.getCheckOutDate();
-      nightsService.recalcNightsOrThrow(r, newCheckIn, newCheckOut);
-      // note: recalculate nightlyPrices & price_total
-      inventoryService.reserveRangeOrThrow(r.getHotelId(),
-          r.getRoomTypeId(),
-          r.getCheckInDate(),
-          r.getCheckOutDate());
-    }
-    if (req.getNumGuests() != null) {
-      // note: check number of guest is lower than the capacity of the room type
-      if (req.getNumGuests() <= 0) {
-        throw new BadRequestException("numGuests must be positive.");
-      }
-      r.setNumGuests(req.getNumGuests());
-    }
-    final Reservations saved = reservationsRepository.save(r);
-    return mapper.toDetail(saved);
+    final Reservations r = reservationsRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new NotFoundException("Reservation not found: " + id));
+
+    final var change = ReservationChangeAdapter.fromUserDto(req);
+
+    final var updated = orchestrator.modifyReservation(r.getHotelId(), r,
+        change, new UserReservationPolicy());
+    return mapper.toDetail(updated);
   }
 
   /**
@@ -241,12 +144,11 @@ public class UserReservationService {
    * @param id     reservation id to cancel
    * @throws NotFoundException if the reservation is not found for the user
    */
-  @Transactional
   public void cancelMyReservation(final Long userId, final Long id) {
     final Reservations r =
         reservationsRepository.findByIdAndUserId(id, userId)
-        .orElseThrow(()
-            -> new NotFoundException("Reservation not found: " + id));
+            .orElseThrow(()
+                -> new NotFoundException("Reservation not found: " + id));
     orchestrator.cancel(r, "user-cancel", userId);
   }
 }

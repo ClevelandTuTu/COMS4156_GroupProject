@@ -8,15 +8,14 @@ import com.project.airhotel.model.Reservations;
 import com.project.airhotel.model.enums.ReservationStatus;
 import com.project.airhotel.model.enums.UpgradeStatus;
 import com.project.airhotel.repository.ReservationsRepository;
-import com.project.airhotel.service.core.ReservationInventoryService;
-import com.project.airhotel.service.core.ReservationNightsService;
+import com.project.airhotel.reservation.ManagerReservationPolicy;
+import com.project.airhotel.reservation.ReservationChangeAdapter;
 import com.project.airhotel.service.core.ReservationOrchestrator;
 import com.project.airhotel.service.core.ReservationStatusService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -25,7 +24,7 @@ import java.util.List;
  * cancelation. All methods run within a transactional boundary.
  */
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class ManagerReservationService {
   /**
    * Repository for persisting and querying reservations.
@@ -37,15 +36,6 @@ public class ManagerReservationService {
    */
   private final EntityGuards entityGuards;
   /**
-   * Domain service that validates and writes stay dates and computed nights.
-   */
-  private final ReservationNightsService nightsService;
-  /**
-   * Domain service responsible for reserving and releasing room-type inventory
-   * ranges.
-   */
-  private final ReservationInventoryService inventoryService;
-  /**
    * Domain service for validating and executing reservation status transitions
    * with history.
    */
@@ -55,33 +45,6 @@ public class ManagerReservationService {
    * then status change).
    */
   private final ReservationOrchestrator orchestrator;
-
-  /**
-   * Constructs the manager reservation service with all required
-   * collaborators.
-   *
-   * @param reservationsRepo repository to read and write reservations
-   * @param eGuards          guards that assert entity existence and ownership
-   * @param nightsServ       service that recalculates nights from date ranges
-   * @param inventoryServ    service that reserves/releases room-type inventory
-   * @param statusServ       service that changes status and writes status
-   *                         history
-   * @param orches           orchestrator for compound flows (e.g., cancel)
-   */
-  public ManagerReservationService(
-      final ReservationsRepository reservationsRepo,
-      final EntityGuards eGuards,
-      final ReservationNightsService nightsServ,
-      final ReservationInventoryService inventoryServ,
-      final ReservationStatusService statusServ,
-      final ReservationOrchestrator orches) {
-    this.reservationsRepository = reservationsRepo;
-    this.entityGuards = eGuards;
-    this.nightsService = nightsServ;
-    this.inventoryService = inventoryServ;
-    this.statusService = statusServ;
-    this.orchestrator = orches;
-  }
 
   /**
    * Lists reservations for a hotel with optional filters. If both status and
@@ -138,16 +101,14 @@ public class ManagerReservationService {
   }
 
   /**
-   * Patches a reservation for a hotel manager. Supports:
-   * - Changing room type: releases old inventory for the original dates, sets
-   * the new room type, and reserves inventory for the same date range under the
-   * new room type.
-   * - Changing room id: verifies room belongs to hotel and type, then sets it.
-   * - Changing dates: releases old inventory, recalculates nights and updates
-   * dates, then reserves inventory for the new date range.
-   * - Updating scalar fields: numGuests, currency, priceTotal, notes.
-   * - Updating status: uses status service to validate transition and write
-   * history.
+   * Patches a reservation for a hotel manager. Supports: - Changing room type:
+   * releases old inventory for the original dates, sets the new room type, and
+   * reserves inventory for the same date range under the new room type. -
+   * Changing room id: verifies room belongs to hotel and type, then sets it. -
+   * Changing dates: releases old inventory, recalculates nights and updates
+   * dates, then reserves inventory for the new date range. - Updating scalar
+   * fields: numGuests, currency, priceTotal, notes. - Updating status: uses
+   * status service to validate transition and write history.
    * <p>
    * Inventory operations are executed around date and room-type changes to
    * maintain consistency.
@@ -171,70 +132,13 @@ public class ManagerReservationService {
       final Long hotelId,
       final Long reservationId,
       final ReservationUpdateRequest req) {
-    Reservations r = entityGuards.getReservationInHotelOrThrow(hotelId,
+    final Reservations r = entityGuards.getReservationInHotelOrThrow(hotelId,
         reservationId);
 
-    final boolean needChangeDates =
-        (req.getCheckInDate() != null || req.getCheckOutDate() != null);
-    final boolean needChangeRoomType =
-        (req.getRoomTypeId() != null && !req.getRoomTypeId().equals(
-            r.getRoomTypeId()));
+    final var change = ReservationChangeAdapter.fromManagerDto(req);
 
-    if (needChangeRoomType) {
-      entityGuards.ensureRoomTypeInHotelOrThrow(hotelId, req.getRoomTypeId());
-      // release inventory of old stayed range
-      inventoryService.releaseRange(r.getHotelId(),
-          r.getRoomTypeId(),
-          r.getCheckInDate(),
-          r.getCheckOutDate());
-      // change room id
-      r.setRoomTypeId(req.getRoomTypeId());
-      // pre-occupy inventory of new stayed range
-      inventoryService.reserveRangeOrThrow(r.getHotelId(),
-          r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
-    }
-
-    if (req.getRoomId() != null) {
-      entityGuards.ensureRoomBelongsToHotelAndType(hotelId, req.getRoomId(),
-          r.getRoomTypeId());
-      // Todo: ensure the room is not occupied
-      r.setRoomId(req.getRoomId());
-    }
-
-    if (needChangeDates) {
-      inventoryService.releaseRange(r.getHotelId(), r.getRoomTypeId(),
-          r.getCheckInDate(), r.getCheckOutDate());
-
-      final var newCheckIn = req.getCheckInDate() != null
-          ? req.getCheckInDate()
-          : r.getCheckInDate();
-      final var newCheckOut = req.getCheckOutDate() != null
-          ? req.getCheckOutDate() : r.getCheckOutDate();
-      nightsService.recalcNightsOrThrow(r, newCheckIn, newCheckOut);
-
-      inventoryService.reserveRangeOrThrow(r.getHotelId(),
-          r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate());
-    }
-
-    if (req.getNumGuests() != null) {
-      r.setNumGuests(req.getNumGuests());
-    }
-    if (req.getCurrency() != null) {
-      r.setCurrency(req.getCurrency());
-    }
-    if (req.getPriceTotal() != null) {
-      r.setPriceTotal(req.getPriceTotal());
-    }
-    if (req.getNotes() != null) {
-      r.setNotes(req.getNotes());
-    }
-
-    if (req.getStatus() != null) {
-      r = statusService.changeStatus(r, req.getStatus(),
-          null, null);
-    }
-
-    return reservationsRepository.save(r);
+    return orchestrator.modifyReservation(hotelId, r, change,
+        new ManagerReservationPolicy());
   }
 
   /**
@@ -264,23 +168,21 @@ public class ManagerReservationService {
 
     if (r.getUpgradeStatus() != UpgradeStatus.ELIGIBLE
         && r.getUpgradeStatus() != UpgradeStatus.APPLIED) {
-      throw new BadRequestException("You cannot upgrade this reservation "
-          + "because the status is "
-          + r.getUpgradeStatus());
+      throw new BadRequestException("You cannot upgrade this reservation " +
+          "because the status is " + r.getUpgradeStatus());
     }
 
-    inventoryService.releaseRange(r.getHotelId(),
-        r.getRoomTypeId(),
-        r.getCheckInDate(),
-        r.getCheckOutDate());
-    r.setRoomTypeId(req.getNewRoomTypeId());
-    inventoryService.reserveRangeOrThrow(r.getHotelId(),
-        r.getRoomTypeId(),
-        r.getCheckInDate(),
-        r.getCheckOutDate());
-    r.setUpgradeStatus(UpgradeStatus.APPLIED);
-    r.setUpgradedAt(LocalDateTime.now());
-    return reservationsRepository.save(r);
+    final var change = com.project.airhotel.domain.ReservationChange.builder()
+        .newRoomTypeId(req.getNewRoomTypeId())
+        .build();
+
+    final Reservations updated = orchestrator.modifyReservation(
+        hotelId, r, change, new ManagerReservationPolicy()
+    );
+
+    updated.setUpgradeStatus(UpgradeStatus.APPLIED);
+    updated.setUpgradedAt(java.time.LocalDateTime.now());
+    return reservationsRepository.save(updated);
   }
 
   /**

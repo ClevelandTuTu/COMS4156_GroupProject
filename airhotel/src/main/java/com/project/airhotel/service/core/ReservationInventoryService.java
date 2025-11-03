@@ -6,107 +6,187 @@ import com.project.airhotel.model.RoomTypes;
 import com.project.airhotel.repository.RoomTypeInventoryRepository;
 import com.project.airhotel.repository.RoomTypesRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Ziyang Su
  * @version 1.0.0
  * todo: add consistency between room_types table and room_type_inventory table
+ * todo: add room_id and new room_type corresponding
  */
 @Service
 @RequiredArgsConstructor
 public class ReservationInventoryService {
-  /** Repository for day-level inventory rows. */
+  /**
+   * Repository for day-level inventory rows.
+   */
   private final RoomTypeInventoryRepository invRepo;
-  /** Repository for room type master data. */
+  /**
+   * Repository for room type master data.
+   */
   private final RoomTypesRepository roomTypesRepo;
 
   /**
-   * Pre-occupy one unit of inventory for each date in [checkIn, checkOut). This
-   * method validates availability first to avoid partial success. If any date
-   * has no availability, the operation fails with an exception.
+   * Create a list of consecutive dates from startInclusive up to but excluding
+   * endExclusive.
    *
-   * @param hotelId    the hotel identifier
-   * @param roomTypeId the room type identifier
-   * @param checkIn    inclusive start date
-   * @param checkOut   exclusive end date
-   * @throws BadRequestException if parameters are invalid or no availability
-   *                             exists for any date
+   * @param startInclusive start date inclusive
+   * @param endExclusive   end date exclusive
+   * @return ordered list of dates, or an empty list if the range is invalid
    */
-  public void reserveRangeOrThrow(final Long hotelId, final Long roomTypeId,
-                                  final LocalDate checkIn,
-                                  final LocalDate checkOut) {
-    ensureParams(hotelId, roomTypeId, checkIn, checkOut);
+  private static Set<LocalDate> toDaySet(final LocalDate startInclusive,
+                                         final LocalDate endExclusive) {
+    final long days = endExclusive.toEpochDay() - startInclusive.toEpochDay();
+    if (days <= 0) {
+      return Collections.emptySet();
+    }
+    final Set<LocalDate> set = new HashSet<>((int) days * 2);
+    LocalDate cur = startInclusive;
+    for (int i = 0;
+         i < days;
+         i++) {
+      set.add(cur);
+      cur = cur.plusDays(1);
+    }
+    return set;
+  }
 
-    final List<LocalDate> days = datesBetween(checkIn, checkOut);
-    // Check before batch save to avoid half successes, half failure
-    final List<RoomTypeInventory> toSave = new ArrayList<>(days.size());
-    for (final LocalDate d : days) {
-      final RoomTypeInventory inv = getOrInitInventoryRow(hotelId, roomTypeId,
-          d);
-      final int available =
-          inv.getTotal() - inv.getReserved() - inv.getBlocked();
-      if (available <= 0) {
-        throw new BadRequestException("No availability on " + d + " for this "
-            + "room type.");
+  /**
+   * Unified inventory adjustment entry Allow either side of old/new to be empty
+   * (indicating an empty set) Two stages: First, "pre-check net increase"
+   * availability, and then "apply net decrease/net increase"
+   */
+  public void applyRangeChangeOrThrow(final Long hotelId,
+                                      @Nullable final Long oldTypeId,
+                                      @Nullable final LocalDate oldIn,
+                                      @Nullable final LocalDate oldOut,
+                                      @Nullable final Long newTypeId,
+                                      @Nullable final LocalDate newIn,
+                                      @Nullable final LocalDate newOut) {
+
+    final Range oldRange = normalizeRange("old", hotelId, oldTypeId, oldIn,
+        oldOut);
+    final Range newRange = normalizeRange("new", hotelId, newTypeId, newIn,
+        newOut);
+
+    // Both sides are empty and there is no operation
+    if (oldRange.isEmpty() && newRange.isEmpty()) {
+      return;
+    }
+
+    // 1) Pre-check: Only check availability for "net new additions"
+    // Net increase = newDays - (oldDays and the same room type)
+    if (!newRange.isEmpty()) {
+      precheckNetAddsOrThrow(hotelId, oldRange, newRange);
+    }
+
+    // 2) First net decrease, then net increase
+    if (!oldRange.isEmpty()) {
+      applyNetRemovals(hotelId, oldRange, newRange);
+    }
+    if (!newRange.isEmpty()) {
+      applyNetAdds(hotelId, oldRange, newRange);
+    }
+  }
+
+  private void precheckNetAddsOrThrow(final Long hotelId,
+                                      final Range oldRange,
+                                      final Range newRange) {
+    // If the room types are the same and the dates are the same, no net
+    // increase
+    if (oldRange.sameTypeWith(newRange) && oldRange.days.equals(newRange.days)) {
+      return;
+    }
+
+    // Calculate the "net increase" set
+    final boolean sameType = oldRange.sameTypeWith(newRange);
+    for (final LocalDate d : newRange.days) {
+      final boolean alreadyHeldSameType = sameType && oldRange.days.contains(d);
+      if (!alreadyHeldSameType) {
+        final RoomTypeInventory inv = getOrInitInventoryRow(hotelId,
+            newRange.roomTypeId, d);
+        final int available =
+            inv.getTotal() - inv.getReserved() - inv.getBlocked();
+        if (available <= 0) {
+          throw new BadRequestException("No availability on " + d + " for the" +
+              " target room type.");
+        }
       }
-      inv.setReserved(inv.getReserved() + 1);
-      inv.setAvailable(inv.getTotal() - inv.getReserved() - inv.getBlocked());
-      toSave.add(inv);
-    }
-    invRepo.saveAll(toSave);
-  }
-
-  /**
-   * Release one unit of inventory for each date in [checkIn, checkOut). If the
-   * inventory row does not exist for a date, nothing is changed for that date.
-   * Reserved cannot drop below zero.
-   *
-   * @param hotelId    the hotel identifier
-   * @param roomTypeId the room type identifier
-   * @param checkIn    inclusive start date
-   * @param checkOut   exclusive end date
-   * @throws BadRequestException if parameters are invalid
-   */
-  public void releaseRange(final Long hotelId, final Long roomTypeId,
-                           final LocalDate checkIn,
-                           final LocalDate checkOut) {
-    ensureParams(hotelId, roomTypeId, checkIn, checkOut);
-
-    for (final LocalDate d : datesBetween(checkIn, checkOut)) {
-      invRepo.findForUpdate(hotelId, roomTypeId, d).ifPresent(inv -> {
-        final int reserved = Math.max(0, inv.getReserved() - 1);
-        inv.setReserved(reserved);
-        inv.setAvailable(inv.getTotal() - reserved - inv.getBlocked());
-        invRepo.save(inv);
-      });
     }
   }
 
-  /**
-   * Validate required parameters and basic date range correctness.
-   *
-   * @param hotelId    hotel id, must be non-null
-   * @param roomTypeId room type id, must be non-null
-   * @param checkIn    inclusive start date, must be non-null
-   * @param checkOut   exclusive end date, must be after checkIn
-   * @throws BadRequestException if any validation fails
-   */
-  private void ensureParams(final Long hotelId, final Long roomTypeId,
-                            final LocalDate checkIn,
-                            final LocalDate checkOut) {
-    if (hotelId == null || roomTypeId == null || checkIn == null
-        || checkOut == null) {
-      throw new BadRequestException("Missing inventory parameters.");
+  private void applyNetRemovals(final Long hotelId,
+                                final Range oldRange,
+                                final Range newRangeOrEmpty) {
+    final boolean sameType = oldRange.sameTypeWith(newRangeOrEmpty);
+    for (final LocalDate d : oldRange.days) {
+      final boolean keep = sameType && newRangeOrEmpty.days.contains(d);
+      if (!keep) {
+        invRepo.findForUpdate(hotelId, oldRange.roomTypeId, d).ifPresent(inv -> {
+          final int reserved = Math.max(0, inv.getReserved() - 1);
+          inv.setReserved(reserved);
+          inv.setAvailable(inv.getTotal() - reserved - inv.getBlocked());
+          invRepo.save(inv);
+        });
+      }
     }
-    if (!checkOut.isAfter(checkIn)) {
-      throw new BadRequestException("Invalid stay date range.");
+  }
+
+  private void applyNetAdds(final Long hotelId,
+                            final Range oldRangeOrEmpty,
+                            final Range newRange) {
+    final boolean sameType = oldRangeOrEmpty.sameTypeWith(newRange);
+    final List<RoomTypeInventory> toSave = new ArrayList<>();
+    for (final LocalDate d : newRange.days) {
+      final boolean alreadyHeld = sameType && oldRangeOrEmpty.days.contains(d);
+      if (!alreadyHeld) {
+        final RoomTypeInventory inv = getOrInitInventoryRow(hotelId,
+            newRange.roomTypeId, d);
+        inv.setReserved(inv.getReserved() + 1);
+        inv.setAvailable(inv.getTotal() - inv.getReserved() - inv.getBlocked());
+        toSave.add(inv);
+      }
     }
+    if (!toSave.isEmpty()) {
+      invRepo.saveAll(toSave);
+    }
+  }
+
+  private Range normalizeRange(final String label,
+                               final Long hotelId,
+                               @Nullable final Long typeId,
+                               @Nullable final LocalDate in,
+                               @Nullable final LocalDate out) {
+    if (typeId == null && in == null && out == null) {
+      return Range.empty();
+    }
+    // Non-empty parameters must be complete
+    if (hotelId == null || typeId == null || in == null || out == null) {
+      throw new BadRequestException("Missing " + label + " inventory " +
+          "parameters.");
+    }
+    if (!out.isAfter(in)) {
+      throw new BadRequestException("Invalid " + label + " stay date range.");
+    }
+    // Verify the legality of the room type's ownership
+    final RoomTypes rt = roomTypesRepo.findById(typeId)
+        .orElseThrow(() -> new BadRequestException("Room type not found: " + typeId));
+    // If the room type does not belong to this hotel, report an error
+    if (!Objects.equals(rt.getHotelId(), hotelId)) {
+      throw new BadRequestException("Room type does not belong to hotel: " + hotelId);
+    }
+
+    // Use a HashSet to store dates for ease of difference
+    return new Range(typeId, toDaySet(in, out));
   }
 
   /**
@@ -145,29 +225,23 @@ public class ReservationInventoryService {
         });
   }
 
+  private record Range(Long roomTypeId, Set<LocalDate> days) {
+      private Range(@Nullable final Long roomTypeId, final Set<LocalDate> days) {
+        this.roomTypeId = roomTypeId;
+        this.days = days != null ? days : Collections.emptySet();
+      }
 
-  /**
-   * Create a list of consecutive dates from startInclusive up to but excluding
-   * endExclusive.
-   *
-   * @param startInclusive start date inclusive
-   * @param endExclusive   end date exclusive
-   * @return ordered list of dates, or an empty list if the range is invalid
-   */
-  private List<LocalDate> datesBetween(final LocalDate startInclusive,
-                                       final LocalDate endExclusive) {
-    final long days = endExclusive.toEpochDay() - startInclusive.toEpochDay();
-    if (days <= 0) {
-      return List.of();
+      static Range empty() {
+        return new Range(null, Collections.emptySet());
+      }
+
+      boolean isEmpty() {
+        return roomTypeId == null || days.isEmpty();
+      }
+
+      boolean sameTypeWith(final Range other) {
+        return this.roomTypeId != null
+            && this.roomTypeId.equals(other.roomTypeId);
+      }
     }
-    final List<LocalDate> res = new ArrayList<>((int) days);
-    LocalDate cur = startInclusive;
-    for (int i = 0;
-         i < days;
-         i++) {
-      res.add(cur);
-      cur = cur.plusDays(1);
-    }
-    return res;
-  }
 }

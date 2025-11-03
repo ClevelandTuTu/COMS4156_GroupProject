@@ -1,8 +1,13 @@
 package com.project.airhotel.service.core;
 
+import com.project.airhotel.domain.ReservationChange;
+import com.project.airhotel.dto.reservation.CreateReservationRequest;
 import com.project.airhotel.exception.BadRequestException;
+import com.project.airhotel.guard.EntityGuards;
 import com.project.airhotel.model.Reservations;
 import com.project.airhotel.model.enums.ReservationStatus;
+import com.project.airhotel.repository.ReservationsRepository;
+import com.project.airhotel.reservation.ReservationChangePolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +22,145 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class ReservationOrchestrator {
-  /** Handles day-by-day inventory adjustments. */
+  /**
+   * Handles day-by-day inventory adjustments.
+   */
   private final ReservationInventoryService inventoryService;
-  /** Persists status changes and writes history entries. */
+  /**
+   * Persists status changes and writes history entries.
+   */
   private final ReservationStatusService statusService;
+
+  private final ReservationNightsService nightsService;
+  private final EntityGuards entityGuards;
+  private final ReservationsRepository reservationsRepository;
+
+  @Transactional
+  public Reservations modifyReservation(
+      final Long hotelId,
+      final Reservations r,
+      final ReservationChange change,
+      final ReservationChangePolicy policy
+  ) {
+    // 1) Boundary Check
+    entityGuards.ensureHotelExists(hotelId);
+    if (!r.getHotelId().equals(hotelId)) {
+      throw new BadRequestException("This reservation does not belong to the " +
+          "hotel.");
+    }
+    policy.verifyOrThrow(change);
+
+    // 2) Existence Check
+    if (change.newRoomTypeId() != null) {
+      entityGuards.ensureRoomTypeInHotelOrThrow(hotelId,
+          change.newRoomTypeId());
+    }
+    if (change.newRoomId() != null) {
+      final Long expectedType = change.newRoomTypeId() != null ?
+          change.newRoomTypeId() : r.getRoomTypeId();
+      entityGuards.ensureRoomBelongsToHotelAndType(hotelId,
+          change.newRoomId(), expectedType);
+    }
+
+    final Long oldTypeId = r.getRoomTypeId();
+    final var oldIn = r.getCheckInDate();
+    final var oldOut = r.getCheckOutDate();
+
+    // 3) Calculate new date and type
+    final var effIn = change.effectiveCheckIn(oldIn);
+    final var effOut = change.effectiveCheckOut(oldOut);
+    final var effTypeId = change.newRoomTypeId() != null ?
+        change.newRoomTypeId() : oldTypeId;
+
+    final boolean needDatesOrTypeChange =
+        change.isChangingDates(oldIn, oldOut) || change.isChangingRoomType(oldTypeId);
+
+    // 4) First recalculate the evening figures,
+    // then perform a "net switch" of inventory,
+    // and finally update the room types
+    if (needDatesOrTypeChange) {
+      if (effIn == null || effOut == null || !effOut.isAfter(effIn)) {
+        throw new BadRequestException("Invalid stay date range.");
+      }
+
+      nightsService.recalcNightsOrThrow(r, effIn, effOut);
+      inventoryService.applyRangeChangeOrThrow(
+          r.getHotelId(),
+          oldTypeId, oldIn, oldOut,      // old
+          effTypeId, effIn, effOut       // new
+      );
+      r.setRoomTypeId(effTypeId);
+    }
+
+    // 5) Specific room assignment (subject to policy permission)
+    if (change.newRoomId() != null) {
+      r.setRoomId(change.newRoomId());
+    }
+
+    // 6) Scalar field
+    if (change.newNumGuests() != null) {
+      if (change.newNumGuests() <= 0) {
+        throw new BadRequestException("numGuests must be positive.");
+      }
+      r.setNumGuests(change.newNumGuests());
+    }
+    if (change.newCurrency() != null) {
+      r.setCurrency(change.newCurrency());
+    }
+    if (change.newPriceTotal() != null) {
+      if (change.newPriceTotal().signum() < 0) {
+        throw new BadRequestException("priceTotal must be non-negative.");
+      }
+      r.setPriceTotal(change.newPriceTotal());
+    }
+    if (change.newNotes() != null) {
+      r.setNotes(change.newNotes());
+    }
+
+    // 7) State transition (where the strategy allows)
+    if (change.newStatus() != null) {
+      statusService.changeStatus(r, change.newStatus(), null, null);
+    }
+
+    // 8) Persistence
+    return reservationsRepository.save(r);
+  }
+
+  @Transactional
+  public Reservations createReservation(final Long userId,
+                                        final CreateReservationRequest req) {
+    // Boundary check
+    entityGuards.ensureHotelExists(req.getHotelId());
+    entityGuards.ensureRoomTypeInHotelOrThrow(req.getHotelId(),
+        req.getRoomTypeId());
+    if (req.getNumGuests() == null || req.getNumGuests() <= 0) {
+      throw new BadRequestException("numGuests must be positive.");
+    }
+    if (req.getPriceTotal() != null && req.getPriceTotal().signum() < 0) {
+      throw new BadRequestException("priceTotal must be non-negative.");
+    }
+
+    // Build the entity and calculate the number of nights
+    final Reservations r = new Reservations();
+    r.setUserId(userId);
+    r.setHotelId(req.getHotelId());
+    r.setRoomTypeId(req.getRoomTypeId());
+    r.setNumGuests(req.getNumGuests());
+    r.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
+    r.setPriceTotal(req.getPriceTotal());
+
+    nightsService.recalcNightsOrThrow(r, req.getCheckInDate(),
+        req.getCheckOutDate());
+
+    // Unified inventory: Empty -> new
+    inventoryService.applyRangeChangeOrThrow(
+        r.getHotelId(),
+        /* old */ null, null, null,
+        /* new */ r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate()
+    );
+
+    return reservationsRepository.save(r);
+  }
 
   /**
    * Cancel a reservation if allowed. This releases the pre-occupied inventory
@@ -44,10 +184,10 @@ public class ReservationOrchestrator {
           + "cannot be cancelled now.");
     }
 
-    inventoryService.releaseRange(
-        r.getHotelId(), r.getRoomTypeId(), r.getCheckInDate(),
-        r.getCheckOutDate()
-    );
+    inventoryService.applyRangeChangeOrThrow(
+        r.getHotelId(),
+        /* old */ r.getRoomTypeId(), r.getCheckInDate(), r.getCheckOutDate(),
+        /* new */ null, null, null);
 
     r.setCanceledAt(LocalDateTime.now());
     statusService.changeStatus(r, ReservationStatus.CANCELED, reason,

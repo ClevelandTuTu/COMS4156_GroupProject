@@ -8,6 +8,7 @@ import com.project.airhotel.repository.ReservationsRepository;
 import com.project.airhotel.repository.ReservationsStatusHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -38,6 +39,7 @@ public class ReservationStatusService {
    * @return the persisted reservation with the new status
    * @throws BadRequestException if the transition is illegal
    */
+  @Transactional
   public Reservations changeStatus(final Reservations r,
                                    final ReservationStatus to,
                                    final String reason,
