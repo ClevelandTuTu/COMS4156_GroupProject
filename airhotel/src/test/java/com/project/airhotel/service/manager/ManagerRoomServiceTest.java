@@ -1,12 +1,14 @@
 package com.project.airhotel.service.manager;
 
-import com.project.airhotel.dto.rooms.RoomUpdateRequest;
-import com.project.airhotel.dto.rooms.RoomsCreateRequest;
-import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.guard.EntityGuards;
-import com.project.airhotel.model.Rooms;
-import com.project.airhotel.model.enums.RoomStatus;
-import com.project.airhotel.repository.RoomsRepository;
+import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.room.dto.RoomUpdateRequest;
+import com.project.airhotel.room.dto.RoomsCreateRequest;
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.guard.EntityGuards;
+import com.project.airhotel.room.domain.Rooms;
+import com.project.airhotel.room.domain.enums.RoomStatus;
+import com.project.airhotel.room.repository.RoomsRepository;
+import com.project.airhotel.room.service.ManagerRoomService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,10 +108,10 @@ class ManagerRoomServiceTest {
   @DisplayName("listRooms → invalid: hotel not found (guard throws)")
   void listRooms_hotelNotFound_throws() {
     final Long hotelId = 404L;
-    doThrow(new com.project.airhotel.exception.NotFoundException("no hotel"))
+    doThrow(new NotFoundException("no hotel"))
         .when(entityGuards).ensureHotelExists(hotelId);
 
-    assertThrows(com.project.airhotel.exception.NotFoundException.class,
+    assertThrows(NotFoundException.class,
         () -> service.listRooms(hotelId, null));
 
     verifyNoInteractions(roomsRepository);
@@ -399,10 +401,10 @@ class ManagerRoomServiceTest {
   void deleteRoom_guardThrows() {
     final Long hotelId = 1L;
     final Long roomId = 123L;
-    doThrow(new com.project.airhotel.exception.NotFoundException("no room"))
+    doThrow(new NotFoundException("no room"))
         .when(entityGuards).getRoomInHotelOrThrow(hotelId, roomId);
 
-    assertThrows(com.project.airhotel.exception.NotFoundException.class,
+    assertThrows(NotFoundException.class,
         () -> service.deleteRoom(hotelId, roomId));
 
     verify(roomsRepository, never()).deleteById(anyLong());

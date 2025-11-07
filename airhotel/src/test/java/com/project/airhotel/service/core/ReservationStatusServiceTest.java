@@ -1,11 +1,13 @@
 package com.project.airhotel.service.core;
 
-import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.model.Reservations;
-import com.project.airhotel.model.ReservationsStatusHistory;
-import com.project.airhotel.model.enums.ReservationStatus;
-import com.project.airhotel.repository.ReservationsRepository;
-import com.project.airhotel.repository.ReservationsStatusHistoryRepository;
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.reservation.domain.Reservations;
+import com.project.airhotel.reservation.domain.ReservationsStatusHistory;
+import com.project.airhotel.reservation.domain.enums.ReservationStatus;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.reservation.repository.ReservationsStatusHistoryRepository;
+import com.project.airhotel.reservation.service.ReservationStatusMachine;
+import com.project.airhotel.reservation.service.ReservationStatusService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 
-import static com.project.airhotel.model.enums.ReservationStatus.*;
+import static com.project.airhotel.reservation.domain.enums.ReservationStatus.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 

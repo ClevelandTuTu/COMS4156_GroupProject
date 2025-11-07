@@ -1,7 +1,8 @@
 package com.project.airhotel.service.auth;
 
-import com.project.airhotel.model.Users;
-import com.project.airhotel.repository.UsersRepository;
+import com.project.airhotel.user.domain.Users;
+import com.project.airhotel.user.repository.UsersRepository;
+import com.project.airhotel.user.service.AuthUserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
