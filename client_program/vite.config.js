@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const DEV_PROXY_TARGET =
+  process.env.AIRHOTEL_API ?? process.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -8,7 +11,11 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/hotels': {
-        target: process.env.AIRHOTEL_API ?? 'http://localhost:8080',
+        target: DEV_PROXY_TARGET,
+        changeOrigin: true
+      },
+      '/reservations': {
+        target: DEV_PROXY_TARGET,
         changeOrigin: true
       }
     }

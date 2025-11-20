@@ -37,6 +37,13 @@
   gap: 1.5rem;
 }
 
+.reservations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
 .loading {
   grid-column: 1 / -1;
   padding: 1rem;
@@ -62,4 +69,26 @@
   background: #f1f5f9;
   color: #475569;
   border: 1px dashed #cbd5f5;
+}
+
+.nav-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.nav-item {
+  border: 1px solid transparent;
+  background: rgba(15, 23, 42, 0.05);
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.nav-item.active {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
 }
