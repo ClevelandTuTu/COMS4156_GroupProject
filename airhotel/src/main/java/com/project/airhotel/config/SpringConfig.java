@@ -1,10 +1,14 @@
 package com.project.airhotel.config;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -76,34 +80,73 @@ public class SpringConfig {
         .authorizeHttpRequests(auth -> auth
             // Explicitly release the endpoint used for OAuth2 login to avoid
             // error after login
-            .requestMatchers("/", "/login", "/logout-success",
-                "/oauth2/**", "/login/oauth2/**", "/error").permitAll()
+            .requestMatchers("/", "/index", "/logout-success",
+                "/oauth2/**", "/login/oauth2/**",
+                "/api/auth/**", "/error").permitAll()
             .anyRequest().authenticated()
         )
+        // Automatically creates the Google Login URLS
+        // Google OAuth credentials in application.properties
+        // redirect to Google's Auth Server /oauth2/authorization/google
+        // Google's callback URL is /login/oauth2/code/google
+        // Spring ignores the redirect URL that's set on Google Cloud
         .oauth2Login(oauth2 -> oauth2
-            .loginPage("/login")
-            .successHandler((req, res, authentication) -> {
-              // 1) get email and name from OAuth2User
-              final OAuth2User principal =
-                  (OAuth2User) authentication.getPrincipal();
-              final String email = principal.getAttribute("email");
-              final String name = principal.getAttribute("name");
-              // 2) upsert user and get userId
-              final Long userId = authUserService.findOrCreateByEmail(email,
-                  name);
-              // 3) store in Session for usage in the future
-              req.getSession(true).setAttribute(SESSION_USER_ID, userId);
-              // 4) redirect
-              res.sendRedirect("/profile");
-            })
+            .successHandler(this::oauthSuccessHandler)
         )
+
         .logout(logout -> logout
-            .logoutUrl("/logout")
-            .logoutSuccessUrl("/logout-success")
+            .logoutRequestMatcher(
+                new org.springframework.security.web.util.matcher.RegexRequestMatcher("^/logout$",
+                    "GET")
+            )
             .invalidateHttpSession(true)
             .clearAuthentication(true)
             .deleteCookies("JSESSIONID")
+            .logoutSuccessHandler((req, res, auth) -> {
+              res.setStatus(200);
+              res.setContentType("application/json");
+              res.getWriter().write("{\"message\": \"Logged out successfully\"}");
+            })
         )
+
         .build();
+  }
+
+  private void oauthSuccessHandler(
+      final jakarta.servlet.http.HttpServletRequest req,
+      final jakarta.servlet.http.HttpServletResponse res,
+      final Authentication authentication
+  ) throws IOException {
+
+    OAuth2User principal = (OAuth2User) authentication.getPrincipal();
+    String email = principal.getAttribute("email");
+    String name  = principal.getAttribute("name");
+
+    // create/find local user
+    Long userId = authUserService.findOrCreateByEmail(email, name);
+    req.getSession(true).setAttribute(SESSION_USER_ID, userId);
+
+    // create JWT
+    //String token = jwtService.create(userId);
+
+    // return JSON response instead of redirecting
+    res.setStatus(HttpStatus.OK.value());
+    res.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+    String json = """
+      {
+        "user": {
+          "id": %d,
+          "email": "%s",
+          "name": "%s"
+        }
+      }
+      """.formatted(userId, escape(email), escape(name));
+
+    res.getWriter().write(json);
+  }
+
+  private String escape(final String s) {
+    return s == null ? "" : s.replace("\"", "\\\"");
   }
 }
