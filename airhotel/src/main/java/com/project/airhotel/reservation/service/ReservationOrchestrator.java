@@ -1,13 +1,13 @@
 package com.project.airhotel.reservation.service;
 
-import com.project.airhotel.reservation.domain.ReservationChange;
-import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.common.guard.EntityGuards;
+import com.project.airhotel.reservation.domain.ReservationChange;
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
-import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.policy.ReservationChangePolicy;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +71,17 @@ public class ReservationOrchestrator {
     final var effOut = change.effectiveCheckOut(oldOut);
     final var effTypeId = change.newRoomTypeId() != null ?
         change.newRoomTypeId() : oldTypeId;
+
+    final boolean typeChanged =
+        change.newRoomTypeId() != null && !change.newRoomTypeId().equals(oldTypeId);
+
+    if (typeChanged && change.newRoomId() == null && r.getRoomId() != null) {
+      entityGuards.ensureRoomBelongsToHotelAndType(
+          hotelId,
+          r.getRoomId(),
+          effTypeId
+      );
+    }
 
     final boolean needDatesOrTypeChange =
         change.isChangingDates(oldIn, oldOut) || change.isChangingRoomType(oldTypeId);
