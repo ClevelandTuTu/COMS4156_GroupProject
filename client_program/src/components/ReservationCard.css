@@ -43,6 +43,31 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.reservation-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.reservation-actions button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reservation-actions button.secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.reservation-actions button:not(.secondary) {
+  background: #ef4444;
+  color: #fff;
+}
+
 .status {
   font-weight: 700;
   color: #334155;

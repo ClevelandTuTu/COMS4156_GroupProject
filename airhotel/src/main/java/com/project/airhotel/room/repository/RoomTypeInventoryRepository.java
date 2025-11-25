@@ -66,4 +66,19 @@ public interface RoomTypeInventoryRepository
       LocalDate stayDate
   );
 
+  /**
+   * Retrieves room type inventory records for a hotel within a stay-date
+   * interval (inclusive).
+   *
+   * @param hotelId hotel identifier
+   * @param start   start date inclusive
+   * @param end     end date inclusive
+   * @return list of inventory rows in the given window
+   */
+  List<RoomTypeInventory> findByHotelIdAndStayDateBetween(
+      Long hotelId,
+      LocalDate start,
+      LocalDate end
+  );
+
 }

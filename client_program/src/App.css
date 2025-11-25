@@ -92,3 +92,13 @@
   border-color: #0ea5e9;
   color: #fff;
 }
+
+.toast-container {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  z-index: 2000;
+}

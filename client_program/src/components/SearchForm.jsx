@@ -9,10 +9,10 @@ function SearchForm({
   onCheckInChange,
   onCheckOutChange,
   onSearch,
-  loading
+  loading,
+  minCheckInDate,
+  minCheckOutDate
 }) {
-  const today = new Date().toISOString().split('T')[0];
-
   return (
     <section className="search-form">
       <div className="field">
@@ -31,7 +31,7 @@ function SearchForm({
         <input
           id="check-in"
           type="date"
-          min={today}
+          min={minCheckInDate}
           value={checkInDate}
           onChange={(event) => onCheckInChange(event.target.value)}
         />
@@ -42,9 +42,10 @@ function SearchForm({
         <input
           id="check-out"
           type="date"
-          min={checkInDate || today}
+          min={minCheckOutDate}
           value={checkOutDate}
           onChange={(event) => onCheckOutChange(event.target.value)}
+          disabled={!checkInDate}
         />
       </div>
 
@@ -54,7 +55,7 @@ function SearchForm({
         onClick={onSearch}
         disabled={loading}
       >
-        {loading ? 'Loading…' : 'Show All Hotels'}
+        {loading ? 'Loading...' : 'Show All Hotels'}
       </button>
     </section>
   );
@@ -68,11 +69,15 @@ SearchForm.propTypes = {
   onCheckInChange: PropTypes.func.isRequired,
   onCheckOutChange: PropTypes.func.isRequired,
   onSearch: PropTypes.func.isRequired,
-  loading: PropTypes.bool
+  loading: PropTypes.bool,
+  minCheckInDate: PropTypes.string,
+  minCheckOutDate: PropTypes.string
 };
 
 SearchForm.defaultProps = {
-  loading: false
+  loading: false,
+  minCheckInDate: undefined,
+  minCheckOutDate: undefined
 };
 
 export default SearchForm;

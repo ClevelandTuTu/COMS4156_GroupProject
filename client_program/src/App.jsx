@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import SearchForm from './components/SearchForm.jsx';
 import HotelCard from './components/HotelCard.jsx';
 import ReservationCard from './components/ReservationCard.jsx';
+import ReservationEditModal from './components/ReservationEditModal.jsx';
+import ConfirmModal from './components/ConfirmModal.jsx';
+import Toast from './components/Toast.jsx';
 import './App.css';
 
 const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -24,6 +27,27 @@ function App() {
   const [reservationsLoading, setReservationsLoading] = useState(false);
   const [reservationsError, setReservationsError] = useState('');
   const [reservationsFetched, setReservationsFetched] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [toasts, setToasts] = useState([]);
+
+  const today = new Date();
+  const tomorrowIso = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() + 1
+  )
+    .toISOString()
+    .split('T')[0];
+
+  const addDays = (dateStr, days) => {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  };
 
   useEffect(() => {
     if (SESSION_COOKIE) {
@@ -116,6 +140,134 @@ function App() {
     setActiveView(view);
   };
 
+  const handleCheckInChange = (value) => {
+    setCheckInDate(value);
+    if (value) {
+      const minOut = addDays(value, 1);
+      if (checkOutDate && checkOutDate < minOut) {
+        setCheckOutDate('');
+      }
+    } else {
+      setCheckOutDate('');
+    }
+  };
+
+  const openEditModal = (reservation) => {
+    setSelectedReservation(reservation);
+    setSubmitError('');
+    setShowEditModal(true);
+  };
+
+  const openCancelModal = (reservation) => {
+    setSelectedReservation(reservation);
+    setSubmitError('');
+    setShowCancelModal(true);
+  };
+
+  const closeModals = () => {
+    setShowEditModal(false);
+    setShowCancelModal(false);
+    setSelectedReservation(null);
+    setSubmitting(false);
+    setSubmitError('');
+  };
+
+  const handleUpdateReservation = async (payload) => {
+    if (!selectedReservation) {
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const url = buildApiUrl(`/reservations/${selectedReservation.id}`);
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        mode: API_BASE_URL ? 'cors' : 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Request failed with status ${response.status}`);
+      }
+      const updated = await response.json();
+      setReservations((prev) =>
+        prev.map((r) => (r.id === updated.id ? updated : r))
+      );
+      addToast('Reservation updated successfully.', 'success');
+      closeModals();
+    } catch (err) {
+      console.error('Failed to update reservation', err);
+      setSubmitError(
+        err instanceof Error ? err.message : 'Failed to update reservation.'
+      );
+      addToast(
+        err instanceof Error ? err.message : 'Failed to update reservation.',
+        'error'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancelReservation = async () => {
+    if (!selectedReservation) {
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const url = buildApiUrl(`/reservations/${selectedReservation.id}`);
+      const response = await fetch(url, {
+        method: 'DELETE',
+        credentials: 'include',
+        mode: API_BASE_URL ? 'cors' : 'same-origin'
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Request failed with status ${response.status}`);
+      }
+      setReservations((prev) =>
+        prev.map((r) =>
+          r.id === selectedReservation.id
+            ? { ...r, status: 'CANCELED' }
+            : r
+        )
+      );
+      addToast('Reservation canceled.', 'success');
+      closeModals();
+    } catch (err) {
+      console.error('Failed to cancel reservation', err);
+      setSubmitError(
+        err instanceof Error ? err.message : 'Failed to cancel reservation.'
+      );
+      addToast(
+        err instanceof Error ? err.message : 'Failed to cancel reservation.',
+        'error'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const addToast = (message, type = 'success') => {
+    const id =
+      (typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
   return (
     <div className="app-shell">
       <header className="hero">
@@ -155,10 +307,14 @@ function App() {
               onSearchCityChange={setSearchCity}
               checkInDate={checkInDate}
               checkOutDate={checkOutDate}
-              onCheckInChange={setCheckInDate}
+              onCheckInChange={handleCheckInChange}
               onCheckOutChange={setCheckOutDate}
               onSearch={fetchHotels}
               loading={loading}
+              minCheckInDate={tomorrowIso}
+              minCheckOutDate={
+                checkInDate ? addDays(checkInDate, 1) : undefined
+              }
             />
 
             {error && <div className="alert alert-error">{error}</div>}
@@ -195,12 +351,46 @@ function App() {
             )}
             <section className="reservations-grid">
               {reservations.map((reservation) => (
-                <ReservationCard key={reservation.id} reservation={reservation} />
+                <ReservationCard
+                  key={reservation.id}
+                  reservation={reservation}
+                  onModify={() => openEditModal(reservation)}
+                  onCancel={() => openCancelModal(reservation)}
+                />
               ))}
             </section>
           </>
         )}
       </main>
+
+      {showEditModal && selectedReservation && (
+        <ReservationEditModal
+          reservation={selectedReservation}
+          onClose={closeModals}
+          onSubmit={handleUpdateReservation}
+          submitting={submitting}
+          error={submitError}
+        />
+      )}
+
+      {showCancelModal && selectedReservation && (
+        <ConfirmModal
+          title="Cancel reservation?"
+          message="Are you sure you want to cancel this reservation?"
+          confirmLabel="Confirm Cancel"
+          cancelLabel="Keep"
+          onClose={closeModals}
+          onConfirm={handleCancelReservation}
+          submitting={submitting}
+          error={submitError}
+        />
+      )}
+
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <Toast key={t.id} toast={t} onClose={() => removeToast(t.id)} />
+        ))}
+      </div>
     </div>
   );
 }

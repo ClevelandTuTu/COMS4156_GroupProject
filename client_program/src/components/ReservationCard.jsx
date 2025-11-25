@@ -4,7 +4,7 @@ import './ReservationCard.css';
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString() : '--';
 
-function ReservationCard({ reservation }) {
+function ReservationCard({ reservation, onModify, onCancel }) {
   return (
     <article className="reservation-card">
       <div className="card-header">
@@ -34,6 +34,15 @@ function ReservationCard({ reservation }) {
           <p className="value">{formatDate(reservation.checkOutDate)}</p>
         </div>
       </div>
+
+      <div className="reservation-actions">
+        <button type="button" className="secondary" onClick={onModify}>
+          Modify
+        </button>
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
     </article>
   );
 }
@@ -46,7 +55,9 @@ ReservationCard.propTypes = {
     roomTypeName: PropTypes.string,
     checkInDate: PropTypes.string,
     checkOutDate: PropTypes.string
-  }).isRequired
+  }).isRequired,
+  onModify: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired
 };
 
 export default ReservationCard;
