@@ -5,6 +5,7 @@ import ReservationCard from './components/ReservationCard.jsx';
 import ReservationEditModal from './components/ReservationEditModal.jsx';
 import ConfirmModal from './components/ConfirmModal.jsx';
 import Toast from './components/Toast.jsx';
+import RoomTypeModal from './components/RoomTypeModal.jsx';
 import './App.css';
 
 const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -33,6 +34,9 @@ function App() {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [showRoomTypeModal, setShowRoomTypeModal] = useState(false);
+  const [selectedHotel, setSelectedHotel] = useState(null);
+  const isModalOpen = showEditModal || showCancelModal || showRoomTypeModal;
 
   const today = new Date();
   const tomorrowIso = new Date(
@@ -54,6 +58,15 @@ function App() {
       document.cookie = `${SESSION_COOKIE}; path=/`;
     }
   }, []);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [isModalOpen]);
 
   const fetchHotels = async () => {
     setLoading(true);
@@ -164,10 +177,21 @@ function App() {
     setShowCancelModal(true);
   };
 
+  const openRoomTypeModal = (hotel) => {
+    if (!checkInDate || !checkOutDate) {
+      addToast('Please select check-in and check-out before reserving.', 'error');
+      return;
+    }
+    setSelectedHotel(hotel);
+    setShowRoomTypeModal(true);
+  };
+
   const closeModals = () => {
     setShowEditModal(false);
     setShowCancelModal(false);
+    setShowRoomTypeModal(false);
     setSelectedReservation(null);
+    setSelectedHotel(null);
     setSubmitting(false);
     setSubmitError('');
   };
@@ -273,9 +297,9 @@ function App() {
       <header className="hero">
         <div>
           {/* <p className="eyebrow">AirHotel Service Explorer</p> */}
-          <h1>Find your next stay with confidence</h1>
+          <h1>Plan your stay in minutes</h1>
           <p className="subtitle">
-            Browse the hotels and reserve one with a signle click.
+            Browse hotels and reserve with a single click.
           </p>
         </div>
       </header>
@@ -330,7 +354,11 @@ function App() {
               {loading && <div className="loading">Loading hotel data...</div>}
               {!loading &&
                 filteredHotels.map((hotel) => (
-                  <HotelCard key={hotel.id} hotel={hotel} />
+                  <HotelCard
+                    key={hotel.id}
+                    hotel={hotel}
+                    onReserve={() => openRoomTypeModal(hotel)}
+                  />
                 ))}
             </section>
           </>
@@ -383,6 +411,31 @@ function App() {
           onConfirm={handleCancelReservation}
           submitting={submitting}
           error={submitError}
+        />
+      )}
+
+      {showRoomTypeModal && selectedHotel && (
+        <RoomTypeModal
+          hotel={selectedHotel}
+          checkInDate={checkInDate}
+          checkOutDate={checkOutDate}
+          onClose={closeModals}
+          fetchAvailability={async (numGuests) => {
+            const url = buildApiUrl(
+              `/hotels/${selectedHotel.id}/room-types/availability?checkIn=${checkInDate}&checkOut=${checkOutDate}${
+                numGuests ? `&numGuests=${numGuests}` : ''
+              }`
+            );
+            const resp = await fetch(url, {
+              credentials: 'include',
+              mode: API_BASE_URL ? 'cors' : 'same-origin'
+            });
+            if (!resp.ok) {
+              const txt = await resp.text();
+              throw new Error(txt || `Request failed with status ${resp.status}`);
+            }
+            return resp.json();
+          }}
         />
       )}
 
