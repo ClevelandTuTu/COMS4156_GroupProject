@@ -123,7 +123,6 @@ public class SpringConfig {
     String name  = principal.getAttribute("name");
 
     // create/find local user
-
     Long userId = authUserService.findOrCreateByEmail(email, name);
 
     // ensure session exists and store user id
@@ -149,7 +148,6 @@ public class SpringConfig {
           "jsessionId": "%s"
       }
       """.formatted(userId, escape(email), escape(name), escape(jsessionId));
-
     res.getWriter().write(json);
   }
 
