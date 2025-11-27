@@ -123,11 +123,15 @@ public class SpringConfig {
     String name  = principal.getAttribute("name");
 
     // create/find local user
-    Long userId = authUserService.findOrCreateByEmail(email, name);
-    req.getSession(true).setAttribute(SESSION_USER_ID, userId);
 
-    // create JWT
-    //String token = jwtService.create(userId);
+    Long userId = authUserService.findOrCreateByEmail(email, name);
+
+    // ensure session exists and store user id
+    var session = req.getSession(true);
+    session.setAttribute(SESSION_USER_ID, userId);
+
+    // store jsession cookie
+    String jsessionId = session.getId();
 
     // return JSON response instead of redirecting
     res.setStatus(HttpStatus.OK.value());
@@ -140,8 +144,11 @@ public class SpringConfig {
           "email": "%s",
           "name": "%s"
         }
+      },
+      "session": {
+          "jsessionId": "%s"
       }
-      """.formatted(userId, escape(email), escape(name));
+      """.formatted(userId, escape(email), escape(name), escape(jsessionId));
 
     res.getWriter().write(json);
   }
