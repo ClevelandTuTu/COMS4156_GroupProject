@@ -13,7 +13,6 @@ import com.project.airhotel.reservation.service.ReservationNightsService;
 import com.project.airhotel.reservation.service.ReservationOrchestrator;
 import com.project.airhotel.reservation.service.ReservationPricingService;
 import com.project.airhotel.reservation.service.ReservationStatusService;
-import com.project.airhotel.room.repository.RoomTypeDailyPriceRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
