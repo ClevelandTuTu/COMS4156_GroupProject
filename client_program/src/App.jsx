@@ -33,6 +33,7 @@ function App() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [creatingReservation, setCreatingReservation] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [showRoomTypeModal, setShowRoomTypeModal] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState(null);
@@ -47,10 +48,24 @@ function App() {
     .toISOString()
     .split('T')[0];
 
+  const parseLocalDate = (value) =>
+    value ? new Date(`${value}T00:00:00`) : null;
+
   const addDays = (dateStr, days) => {
-    const d = new Date(dateStr);
+    const d = parseLocalDate(dateStr);
+    if (!d) return '';
     d.setDate(d.getDate() + days);
     return d.toISOString().split('T')[0];
+  };
+
+  const calculateNights = (start, end) => {
+    if (!start || !end) return 0;
+    const startDate = parseLocalDate(start);
+    const endDate = parseLocalDate(end);
+    if (!startDate || !endDate) return 0;
+    const diffMs = endDate.getTime() - startDate.getTime();
+    const nights = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    return nights > 0 ? nights : 0;
   };
 
   useEffect(() => {
@@ -149,6 +164,39 @@ function App() {
     );
   }, [hotels, searchCity]);
 
+  const groupedReservations = useMemo(() => {
+    const toTime = (value, fallback = Number.MAX_SAFE_INTEGER) => {
+      const d = parseLocalDate(value);
+      const time = d ? d.getTime() : fallback;
+      return Number.isNaN(time) ? fallback : time;
+    };
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todayMs = startOfToday.getTime();
+
+    const sorted = [...reservations].sort(
+      (a, b) => toTime(a.checkInDate) - toTime(b.checkInDate)
+    );
+    const upcoming = [];
+    const past = [];
+    const canceled = [];
+    sorted.forEach((r) => {
+      const status = (r.status ?? '').toUpperCase();
+      if (status === 'CANCELED') {
+        canceled.push(r);
+        return;
+      }
+      const checkOutMs = toTime(r.checkOutDate, 0);
+      // Past only after the stay has completed; ongoing stays remain upcoming.
+      if (checkOutMs < todayMs) {
+        past.push(r);
+        return;
+      }
+      upcoming.push(r);
+    });
+    return { upcoming, past, canceled };
+  }, [reservations]);
+
   const onNavChange = (view) => {
     setActiveView(view);
   };
@@ -193,6 +241,7 @@ function App() {
     setSelectedReservation(null);
     setSelectedHotel(null);
     setSubmitting(false);
+    setCreatingReservation(false);
     setSubmitError('');
   };
 
@@ -203,6 +252,10 @@ function App() {
     setSubmitting(true);
     setSubmitError('');
     try {
+      const nights = calculateNights(
+        payload.checkInDate,
+        payload.checkOutDate
+      );
       const url = buildApiUrl(`/reservations/${selectedReservation.id}`);
       const response = await fetch(url, {
         method: 'PATCH',
@@ -211,18 +264,20 @@ function App() {
         },
         credentials: 'include',
         mode: API_BASE_URL ? 'cors' : 'same-origin',
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          checkInDate: payload.checkInDate,
+          checkOutDate: payload.checkOutDate,
+          nights
+        })
       });
       if (!response.ok) {
         const text = await response.text();
         throw new Error(text || `Request failed with status ${response.status}`);
       }
-      const updated = await response.json();
-      setReservations((prev) =>
-        prev.map((r) => (r.id === updated.id ? updated : r))
-      );
+      await response.json();
       addToast('Reservation updated successfully.', 'success');
       closeModals();
+      fetchReservations();
     } catch (err) {
       console.error('Failed to update reservation', err);
       setSubmitError(
@@ -254,15 +309,9 @@ function App() {
         const text = await response.text();
         throw new Error(text || `Request failed with status ${response.status}`);
       }
-      setReservations((prev) =>
-        prev.map((r) =>
-          r.id === selectedReservation.id
-            ? { ...r, status: 'CANCELED' }
-            : r
-        )
-      );
       addToast('Reservation canceled.', 'success');
       closeModals();
+      fetchReservations();
     } catch (err) {
       console.error('Failed to cancel reservation', err);
       setSubmitError(
@@ -274,6 +323,60 @@ function App() {
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCreateReservation = async ({ roomTypeId, numGuests, baseRate }) => {
+    if (!selectedHotel || !roomTypeId || !checkInDate || !checkOutDate) {
+      addToast('Please select a room type and dates.', 'error');
+      return;
+    }
+    const nights = calculateNights(checkInDate, checkOutDate);
+    const priceTotal =
+      typeof baseRate === 'number' && !Number.isNaN(baseRate)
+        ? Math.max(0, baseRate * nights)
+        : 0;
+
+    setCreatingReservation(true);
+    try {
+      const url = buildApiUrl('/reservations');
+      const payload = {
+        hotelId: selectedHotel.id,
+        roomTypeId,
+        checkInDate,
+        checkOutDate,
+        nights,
+        numGuests,
+        currency: 'USD',
+        priceTotal,
+        notes: ''
+      };
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        mode: API_BASE_URL ? 'cors' : 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Request failed with status ${response.status}`);
+      }
+      const created = await response.json();
+      setReservations((prev) => [created, ...prev]);
+      addToast('Reservation created successfully.', 'success');
+      closeModals();
+      setActiveView('reservations');
+    } catch (err) {
+      console.error('Failed to create reservation', err);
+      addToast(
+        err instanceof Error ? err.message : 'Failed to create reservation.',
+        'error'
+      );
+    } finally {
+      setCreatingReservation(false);
     }
   };
 
@@ -377,16 +480,57 @@ function App() {
                 You have no reservations yet.
               </div>
             )}
-            <section className="reservations-grid">
-              {reservations.map((reservation) => (
-                <ReservationCard
-                  key={reservation.id}
-                  reservation={reservation}
-                  onModify={() => openEditModal(reservation)}
-                  onCancel={() => openCancelModal(reservation)}
-                />
-              ))}
-            </section>
+            {!reservationsLoading && reservations.length > 0 && (
+              <>
+                {groupedReservations.upcoming.length > 0 && (
+                  <>
+                    <h3 className="section-title">Upcoming</h3>
+                    <section className="reservations-grid">
+                      {groupedReservations.upcoming.map((reservation) => (
+                        <ReservationCard
+                          key={reservation.id}
+                          reservation={reservation}
+                          onModify={() => openEditModal(reservation)}
+                          onCancel={() => openCancelModal(reservation)}
+                        />
+                      ))}
+                    </section>
+                  </>
+                )}
+
+                {groupedReservations.past.length > 0 && (
+                  <>
+                    <h3 className="section-title muted">Past</h3>
+                    <section className="reservations-grid">
+                      {groupedReservations.past.map((reservation) => (
+                        <ReservationCard
+                          key={reservation.id}
+                          reservation={reservation}
+                          onModify={() => openEditModal(reservation)}
+                          onCancel={() => openCancelModal(reservation)}
+                        />
+                      ))}
+                    </section>
+                  </>
+                )}
+
+                {groupedReservations.canceled.length > 0 && (
+                  <>
+                    <h3 className="section-title muted">Canceled</h3>
+                    <section className="reservations-grid">
+                      {groupedReservations.canceled.map((reservation) => (
+                        <ReservationCard
+                          key={reservation.id}
+                          reservation={reservation}
+                          onModify={() => openEditModal(reservation)}
+                          onCancel={() => openCancelModal(reservation)}
+                        />
+                      ))}
+                    </section>
+                  </>
+                )}
+              </>
+            )}
           </>
         )}
       </main>
@@ -436,6 +580,8 @@ function App() {
             }
             return resp.json();
           }}
+          onSubmitReservation={handleCreateReservation}
+          submitting={creatingReservation}
         />
       )}
 

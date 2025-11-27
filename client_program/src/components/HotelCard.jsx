@@ -13,7 +13,7 @@ const formatAddress = (hotel) => {
   return parts.join(', ');
 };
 
-function HotelCard({ hotel }) {
+function HotelCard({ hotel, onReserve }) {
   return (
     <article className="hotel-card">
       <div className="card-header">
@@ -40,7 +40,7 @@ function HotelCard({ hotel }) {
       </div>
 
       <div className="card-footer">
-        <button type="button" className="book-button">
+        <button type="button" className="book-button" onClick={onReserve}>
           Reserve Now
         </button>
       </div>
@@ -61,7 +61,12 @@ HotelCard.propTypes = {
     postalCode: PropTypes.string,
     starRating: PropTypes.number,
     createdAt: PropTypes.string
-  }).isRequired
+  }).isRequired,
+  onReserve: PropTypes.func
+};
+
+HotelCard.defaultProps = {
+  onReserve: undefined
 };
 
 export default HotelCard;

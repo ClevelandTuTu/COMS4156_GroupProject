@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import DateRangePicker from './DateRangePicker.jsx';
 import './SearchForm.css';
 
 function SearchForm({
@@ -26,26 +27,16 @@ function SearchForm({
         />
       </div>
 
-      <div className="field">
-        <label htmlFor="check-in">Check-in</label>
-        <input
-          id="check-in"
-          type="date"
-          min={minCheckInDate}
-          value={checkInDate}
-          onChange={(event) => onCheckInChange(event.target.value)}
-        />
-      </div>
-
-      <div className="field">
-        <label htmlFor="check-out">Check-out</label>
-        <input
-          id="check-out"
-          type="date"
-          min={minCheckOutDate}
-          value={checkOutDate}
-          onChange={(event) => onCheckOutChange(event.target.value)}
-          disabled={!checkInDate}
+      <div className="field date-range-field">
+        <DateRangePicker
+          label="Dates"
+          checkInDate={checkInDate}
+          checkOutDate={checkOutDate}
+          minCheckInDate={minCheckInDate}
+          onChange={(start, end) => {
+            onCheckInChange(start);
+            onCheckOutChange(end);
+          }}
         />
       </div>
 

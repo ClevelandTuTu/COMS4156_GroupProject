@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import './ReservationCard.css';
 
 const formatDate = (value) =>
-  value ? new Date(value).toLocaleDateString() : '--';
+  value ? new Date(`${value}T00:00:00`).toLocaleDateString() : '--';
 
 function ReservationCard({ reservation, onModify, onCancel }) {
   return (

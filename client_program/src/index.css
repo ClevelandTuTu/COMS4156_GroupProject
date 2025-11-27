@@ -19,6 +19,10 @@ body {
   background: radial-gradient(circle at top, #e0f2fe, #e2e8f0 60%);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 #root {
   min-height: 100vh;
 }

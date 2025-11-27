@@ -39,9 +39,14 @@
 
 .reservations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
   gap: 1rem;
   margin-top: 0.75rem;
+  justify-content: flex-start;
+}
+
+.reservations-grid .reservation-card {
+  height: 100%;
 }
 
 .loading {
@@ -101,4 +106,14 @@
   flex-direction: column;
   gap: 0.6rem;
   z-index: 2000;
+}
+
+.section-title {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.section-title.muted {
+  color: #475569;
 }
