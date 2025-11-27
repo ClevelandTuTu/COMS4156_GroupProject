@@ -34,6 +34,7 @@ public class ReservationOrchestrator {
   private final ReservationNightsService nightsService;
   private final EntityGuards entityGuards;
   private final ReservationsRepository reservationsRepository;
+  private final ReservationPricingService pricingService;
 
   @Transactional
   public Reservations modifyReservation(
@@ -93,14 +94,14 @@ public class ReservationOrchestrator {
       if (effIn == null || effOut == null || !effOut.isAfter(effIn)) {
         throw new BadRequestException("Invalid stay date range.");
       }
-
+      r.setRoomTypeId(effTypeId);
       nightsService.recalcNightsOrThrow(r, effIn, effOut);
+      pricingService.recalcTotalPriceOrThrow(r);
       inventoryService.applyRangeChangeOrThrow(
           r.getHotelId(),
           oldTypeId, oldIn, oldOut,      // old
           effTypeId, effIn, effOut       // new
       );
-      r.setRoomTypeId(effTypeId);
     }
 
     // 5) Specific room assignment (subject to policy permission)
@@ -158,10 +159,12 @@ public class ReservationOrchestrator {
     r.setRoomTypeId(req.getRoomTypeId());
     r.setNumGuests(req.getNumGuests());
     r.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
-    r.setPriceTotal(req.getPriceTotal());
+    r.setPriceTotal(null);
 
     nightsService.recalcNightsOrThrow(r, req.getCheckInDate(),
         req.getCheckOutDate());
+
+    pricingService.recalcTotalPriceOrThrow(r);
 
     // Unified inventory: Empty -> new
     inventoryService.applyRangeChangeOrThrow(
