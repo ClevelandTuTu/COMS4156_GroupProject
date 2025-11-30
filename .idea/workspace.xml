@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="b240929d-998e-4857-8570-27bb7112f81a" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/controller/user/UserReservationController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/dto/reservation/CreateReservationRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/dto/reservation/PatchReservationRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/dto/reservation/ReservationDetailResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/dto/reservation/ReservationSummaryResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/mapper/ReservationMapper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/core/ReservationCoreService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/core/ReservationStatusMachine.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/user/UserReservationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/controller/ManagerReservationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/controller/manager/ManagerReservationController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/controller/ManagerRoomController.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/controller/manager/ManagerRoomController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/controller/UserController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/repository/ReservationsRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/repository/ReservationsRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/repository/UsersRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/ManagerReservationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/manager/ManagerReservationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/ManagerRoomService.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/manager/ManagerRoomService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/main/java/com/project/airhotel/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/test/java/com/project/airhotel/ManagerReservationServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/test/java/com/project/airhotel/ManagerReservationServiceTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/airhotel/src/test/java/com/project/airhotel/ManagerRoomServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/airhotel/src/test/java/com/project/airhotel/ManagerRoomServiceTest.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ClevelandTuTu&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/ClevelandTuTu/COMS4156_GroupProject.git&quot;,
+    &quot;accountId&quot;: &quot;3c12075a-85c6-4d32-b745-2b5ba191ed83&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="33oDYqoAgvlPWEN6B970CY7IIH8" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "feature/separate-user-manager-reservations",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/28059/Github/COMS4156_GroupProject",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="COMS4156_GroupProject" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="COMS4156_GroupProject" />
+      <option name="filePath" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-28b599e66164-intellij.indexing.shared.core-IU-242.26775.15" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-IU-242.26775.15" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b240929d-998e-4857-8570-27bb7112f81a" name="Changes" comment="" />
+      <created>1759974583191</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1759974583191</updated>
+      <workItem from="1759974585881" duration="55000" />
+      <workItem from="1759974665931" duration="296000" />
+      <workItem from="1759974988338" duration="174000" />
+      <workItem from="1759975171652" duration="483000" />
+      <workItem from="1759975690640" duration="29000" />
+      <workItem from="1759975726816" duration="147000" />
+      <workItem from="1759975881834" duration="9000" />
+      <workItem from="1760845313784" duration="11000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

@@ -1,0 +1,146 @@
+.app-shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2.25rem;
+}
+
+.hero {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  color: #fff;
+  padding: 1.5rem;
+  border-radius: 18px;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 35px 60px rgba(79, 70, 229, 0.35);
+}
+
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 0.5rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 3vw, 2.2rem);
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  max-width: 580px;
+}
+
+.auth-actions button.secondary {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.5rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-actions button.primary {
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  background: #fff;
+  color: #0ea5e9;
+  cursor: pointer;
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.reservations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+  gap: 1rem;
+  margin-top: 0.75rem;
+  justify-content: flex-start;
+}
+
+.reservations-grid .reservation-card {
+  height: 100%;
+}
+
+.loading {
+  grid-column: 1 / -1;
+  padding: 1rem;
+  border-radius: 14px;
+  background: #fef9c3;
+  color: #854d0e;
+  font-weight: 600;
+}
+
+.alert {
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.alert-empty {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px dashed #cbd5f5;
+}
+
+.nav-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.nav-item {
+  border: 1px solid transparent;
+  background: rgba(15, 23, 42, 0.05);
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.nav-item.active {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
+}
+
+.toast-container {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  z-index: 2000;
+}
+
+.section-title {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.section-title.muted {
+  color: #475569;
+}

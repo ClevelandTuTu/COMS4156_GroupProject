@@ -1,0 +1,94 @@
+.hotel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow:
+    0 18px 30px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(226, 232, 240, 0.6);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.card-header h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.brand {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin: 0;
+}
+
+.rating {
+  background: #fde047;
+  color: #0f172a;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  min-width: 70px;
+  text-align: center;
+}
+
+.address {
+  color: #475569;
+  margin: 0;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+  color: #94a3b8;
+}
+
+.value {
+  font-size: 1rem;
+  margin: 0.1rem 0 0;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.book-button {
+  border: none;
+  border-radius: 14px;
+  padding: 0.9rem 1.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #0ea5e9;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.book-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(14, 165, 233, 0.25);
+}

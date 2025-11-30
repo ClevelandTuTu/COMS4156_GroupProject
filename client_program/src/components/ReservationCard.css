@@ -1,0 +1,91 @@
+.reservation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow:
+    0 10px 25px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(226, 232, 240, 0.7);
+}
+
+.reservation-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.reservation-card .eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.reservation-card h3 {
+  margin: 0.25rem 0 0.15rem;
+  font-size: 1.2rem;
+}
+
+.reservation-card .subheading {
+  margin: 0;
+  color: #475569;
+}
+
+.reservation-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.reservation-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.reservation-actions button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reservation-actions button.secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.reservation-actions button:not(.secondary) {
+  background: #ef4444;
+  color: #fff;
+}
+
+.status {
+  font-weight: 700;
+  color: #334155;
+}
+
+.status-canceled {
+  color: #dc2626;
+}
+
+.status-pending {
+  color: #d97706;
+}
+
+.status-confirmed {
+  color: #16a34a;
+}
+
+.status-checked_in,
+.status-checked_out {
+  color: #0ea5e9;
+}
