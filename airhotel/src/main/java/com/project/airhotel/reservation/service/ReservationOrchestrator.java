@@ -1,13 +1,13 @@
 package com.project.airhotel.reservation.service;
 
-import com.project.airhotel.reservation.domain.ReservationChange;
-import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.common.guard.EntityGuards;
+import com.project.airhotel.reservation.domain.ReservationChange;
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
-import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.policy.ReservationChangePolicy;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +34,7 @@ public class ReservationOrchestrator {
   private final ReservationNightsService nightsService;
   private final EntityGuards entityGuards;
   private final ReservationsRepository reservationsRepository;
+  private final ReservationPricingService pricingService;
 
   @Transactional
   public Reservations modifyReservation(
@@ -72,6 +73,17 @@ public class ReservationOrchestrator {
     final var effTypeId = change.newRoomTypeId() != null ?
         change.newRoomTypeId() : oldTypeId;
 
+    final boolean typeChanged =
+        change.newRoomTypeId() != null && !change.newRoomTypeId().equals(oldTypeId);
+
+    if (typeChanged && change.newRoomId() == null && r.getRoomId() != null) {
+      entityGuards.ensureRoomBelongsToHotelAndType(
+          hotelId,
+          r.getRoomId(),
+          effTypeId
+      );
+    }
+
     final boolean needDatesOrTypeChange =
         change.isChangingDates(oldIn, oldOut) || change.isChangingRoomType(oldTypeId);
 
@@ -82,14 +94,14 @@ public class ReservationOrchestrator {
       if (effIn == null || effOut == null || !effOut.isAfter(effIn)) {
         throw new BadRequestException("Invalid stay date range.");
       }
-
+      r.setRoomTypeId(effTypeId);
       nightsService.recalcNightsOrThrow(r, effIn, effOut);
+      pricingService.recalcTotalPriceOrThrow(r);
       inventoryService.applyRangeChangeOrThrow(
           r.getHotelId(),
           oldTypeId, oldIn, oldOut,      // old
           effTypeId, effIn, effOut       // new
       );
-      r.setRoomTypeId(effTypeId);
     }
 
     // 5) Specific room assignment (subject to policy permission)
@@ -147,10 +159,12 @@ public class ReservationOrchestrator {
     r.setRoomTypeId(req.getRoomTypeId());
     r.setNumGuests(req.getNumGuests());
     r.setCurrency(req.getCurrency() != null ? req.getCurrency() : "USD");
-    r.setPriceTotal(req.getPriceTotal());
+    r.setPriceTotal(null);
 
     nightsService.recalcNightsOrThrow(r, req.getCheckInDate(),
         req.getCheckOutDate());
+
+    pricingService.recalcTotalPriceOrThrow(r);
 
     // Unified inventory: Empty -> new
     inventoryService.applyRangeChangeOrThrow(

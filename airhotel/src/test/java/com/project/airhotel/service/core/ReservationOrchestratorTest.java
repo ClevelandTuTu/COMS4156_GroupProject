@@ -11,6 +11,7 @@ import com.project.airhotel.reservation.policy.ReservationChangePolicy;
 import com.project.airhotel.reservation.service.ReservationInventoryService;
 import com.project.airhotel.reservation.service.ReservationNightsService;
 import com.project.airhotel.reservation.service.ReservationOrchestrator;
+import com.project.airhotel.reservation.service.ReservationPricingService;
 import com.project.airhotel.reservation.service.ReservationStatusService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,6 +63,8 @@ class ReservationOrchestratorTest {
   EntityGuards entityGuards;
   @Mock
   ReservationsRepository reservationsRepository;
+  @Mock
+  ReservationPricingService pricingService;
 
   @InjectMocks
   ReservationOrchestrator orchestrator;
@@ -112,7 +115,15 @@ class ReservationOrchestratorTest {
     }).when(nightsService).recalcNightsOrThrow(any(Reservations.class),
         eq(in), eq(out));
 
-    when(reservationsRepository.save(any(Reservations.class))).thenAnswer(inv -> inv.getArgument(0));
+    final BigDecimal expectedTotal = new BigDecimal("3200.00");
+    Mockito.lenient().doAnswer(inv -> {
+      final Reservations r = inv.getArgument(0);
+      r.setPriceTotal(expectedTotal);
+      return null;
+    }).when(pricingService).recalcTotalPriceOrThrow(any(Reservations.class));
+
+    when(reservationsRepository.save(any(Reservations.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     final Reservations saved = orchestrator.createReservation(userId, req);
 
@@ -120,11 +131,13 @@ class ReservationOrchestratorTest {
     assertEquals(1L, saved.getHotelId());
     assertEquals(11L, saved.getRoomTypeId());
     assertEquals("USD", saved.getCurrency());
-    assertNull(saved.getPriceTotal());
+    assertEquals(expectedTotal, saved.getPriceTotal());
     assertEquals(in, saved.getCheckInDate());
     assertEquals(out, saved.getCheckOutDate());
     assertEquals(2, saved.getNights());
 
+    verify(nightsService).recalcNightsOrThrow(any(Reservations.class), eq(in), eq(out));
+    verify(pricingService).recalcTotalPriceOrThrow(any(Reservations.class));
     verify(inventoryService).applyRangeChangeOrThrow(1L, null, null, null,
         11L, in, out);
   }
@@ -272,11 +285,13 @@ class ReservationOrchestratorTest {
     assertSame(r, out);
     assertEquals(22L, r.getRoomTypeId());
     assertEquals(3, r.getNights());
+
     verify(inventoryService).applyRangeChangeOrThrow(
         eq(1L),
         eq(11L), eq(LocalDate.of(2025, 10, 20)), eq(LocalDate.of(2025, 10, 22)),
         eq(22L), eq(newIn), eq(newOut)
     );
+    verify(pricingService).recalcTotalPriceOrThrow(r);
     verify(reservationsRepository).save(r);
   }
 

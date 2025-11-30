@@ -21,7 +21,6 @@ import java.util.Set;
  * @author Ziyang Su
  * @version 1.0.0
  * todo: add consistency between room_types table and room_type_inventory table
- * todo: add room_id and new room_type corresponding
  */
 @Service
 @RequiredArgsConstructor
