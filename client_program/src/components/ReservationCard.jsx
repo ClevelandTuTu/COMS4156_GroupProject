@@ -5,6 +5,9 @@ const formatDate = (value) =>
   value ? new Date(`${value}T00:00:00`).toLocaleDateString() : '--';
 
 function ReservationCard({ reservation, onModify, onCancel }) {
+  const status = (reservation.status ?? '').toLowerCase();
+  const canEdit = status === 'pending' || status === 'confirmed';
+
   return (
     <article className="reservation-card">
       <div className="card-header">
@@ -35,14 +38,16 @@ function ReservationCard({ reservation, onModify, onCancel }) {
         </div>
       </div>
 
-      <div className="reservation-actions">
-        <button type="button" className="secondary" onClick={onModify}>
-          Modify
-        </button>
-        <button type="button" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
+      {canEdit && (
+        <div className="reservation-actions">
+          <button type="button" className="secondary" onClick={onModify}>
+            Modify
+          </button>
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      )}
     </article>
   );
 }

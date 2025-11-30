@@ -10,12 +10,14 @@ import './App.css';
 
 const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 const API_BASE_URL = RAW_API_BASE.replace(/\/+$/, '');
-const SESSION_COOKIE = import.meta.env.VITE_SESSION_COOKIE ?? '';
 
 const buildApiUrl = (path) =>
   API_BASE_URL ? `${API_BASE_URL}${path}` : path;
 
 function App() {
+  const hasJSessionCookie = () =>
+    document.cookie.split(';').some((c) => c.trim().startsWith('JSESSIONID='));
+
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -37,6 +39,7 @@ function App() {
   const [toasts, setToasts] = useState([]);
   const [showRoomTypeModal, setShowRoomTypeModal] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState(null);
+  const [hasSession, setHasSession] = useState(false);
   const isModalOpen = showEditModal || showCancelModal || showRoomTypeModal;
 
   const today = new Date();
@@ -50,6 +53,41 @@ function App() {
 
   const parseLocalDate = (value) =>
     value ? new Date(`${value}T00:00:00`) : null;
+
+  const persistSessionFromPayload = (payload) => {
+    const sessionId = payload?.session?.jsessionId;
+    if (sessionId) {
+      document.cookie = `JSESSIONID=${sessionId}; path=/`;
+      setHasSession(true);
+    }
+  };
+
+  useEffect(() => {
+    if (hasJSessionCookie()) {
+      setHasSession(true);
+    }
+    // Silent session probe in case cookie is HttpOnly and unreadable
+    const probeSession = async () => {
+      try {
+        const resp = await fetch(buildApiUrl('/hotels'), {
+          credentials: 'include',
+          mode: API_BASE_URL ? 'cors' : 'same-origin'
+        });
+        if (resp.ok) {
+          setHasSession(true);
+        }
+      } catch (e) {
+        // ignore probe errors
+      }
+    };
+    if (!hasSession) {
+      probeSession();
+    }
+  }, []);
+
+  const handleLogin = () => {
+    window.location.href = buildApiUrl('/oauth2/authorization/google');
+  };
 
   const addDays = (dateStr, days) => {
     const d = parseLocalDate(dateStr);
@@ -68,11 +106,34 @@ function App() {
     return nights > 0 ? nights : 0;
   };
 
-  useEffect(() => {
-    if (SESSION_COOKIE) {
-      document.cookie = `${SESSION_COOKIE}; path=/`;
+  const logout = async () => {
+    try {
+      const url = buildApiUrl('/logout');
+      const resp = await fetch(url, {
+        credentials: 'include',
+        mode: API_BASE_URL ? 'cors' : 'same-origin'
+      });
+      if (!resp.ok) {
+        throw new Error(`Logout failed with status ${resp.status}`);
+      }
+      setHasSession(false);
+      setHotels([]);
+      setHasFetched(false);
+      setReservations([]);
+      setReservationsFetched(false);
+      setSearchCity('');
+      setCheckInDate('');
+      setCheckOutDate('');
+      addToast('Logged out.', 'success');
+      document.cookie = 'JSESSIONID=; Max-Age=0; path=/';
+    } catch (err) {
+      console.error('Logout failed', err);
+      addToast(
+        err instanceof Error ? err.message : 'Logout failed.',
+        'error'
+      );
     }
-  }, []);
+  };
 
   useEffect(() => {
     if (isModalOpen) {
@@ -84,6 +145,11 @@ function App() {
   }, [isModalOpen]);
 
   const fetchHotels = async () => {
+    if (!hasSession) {
+      setError('');
+      setHasFetched(false);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -101,6 +167,8 @@ function App() {
       }
 
       const data = await response.json();
+      persistSessionFromPayload(data);
+      setHasSession(true);
       setHotels(Array.isArray(data) ? data : []);
       setHasFetched(true);
     } catch (err) {
@@ -116,6 +184,11 @@ function App() {
   };
 
   const fetchReservations = async () => {
+    if (!hasSession) {
+      setReservationsError('');
+      setReservationsFetched(false);
+      return;
+    }
     setReservationsLoading(true);
     setReservationsError('');
     try {
@@ -133,6 +206,8 @@ function App() {
       }
 
       const data = await response.json();
+      persistSessionFromPayload(data);
+      setHasSession(true);
       setReservations(Array.isArray(data) ? data : []);
       setReservationsFetched(true);
     } catch (err) {
@@ -274,7 +349,8 @@ function App() {
         const text = await response.text();
         throw new Error(text || `Request failed with status ${response.status}`);
       }
-      await response.json();
+      const data = await response.json();
+      persistSessionFromPayload(data);
       addToast('Reservation updated successfully.', 'success');
       closeModals();
       fetchReservations();
@@ -365,10 +441,11 @@ function App() {
         throw new Error(text || `Request failed with status ${response.status}`);
       }
       const created = await response.json();
-      setReservations((prev) => [created, ...prev]);
+      persistSessionFromPayload(created);
       addToast('Reservation created successfully.', 'success');
       closeModals();
       setActiveView('reservations');
+      fetchReservations();
     } catch (err) {
       console.error('Failed to create reservation', err);
       addToast(
@@ -398,12 +475,32 @@ function App() {
   return (
     <div className="app-shell">
       <header className="hero">
-        <div>
-          {/* <p className="eyebrow">AirHotel Service Explorer</p> */}
-          <h1>Plan your stay in minutes</h1>
-          <p className="subtitle">
-            Browse hotels and reserve with a single click.
-          </p>
+        <div className="hero-top">
+          <div>
+            <h1>Plan your stay in minutes</h1>
+            <p className="subtitle">
+              Browse hotels and reserve with a single click.
+            </p>
+          </div>
+          <div className="auth-actions">
+            {hasSession ? (
+              <button
+                type="button"
+                className="secondary"
+                onClick={logout}
+              >
+                Log out
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="primary"
+                onClick={handleLogin}
+              >
+                Sign in
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -429,6 +526,11 @@ function App() {
       <main>
         {activeView === 'search' && (
           <>
+            {!hasSession && (
+              <div className="alert alert-empty">
+                Please sign in to search and view hotels.
+              </div>
+            )}
             <SearchForm
               searchCity={searchCity}
               onSearchCityChange={setSearchCity}
@@ -444,7 +546,9 @@ function App() {
               }
             />
 
-            {error && <div className="alert alert-error">{error}</div>}
+            {hasSession && error && (
+              <div className="alert alert-error">{error}</div>
+            )}
             {!error && !loading && hasFetched && filteredHotels.length === 0 && (
               <div className="alert alert-empty">
                 No hotels matched{' '}
@@ -454,8 +558,11 @@ function App() {
             )}
 
             <section className="results">
-              {loading && <div className="loading">Loading hotel data...</div>}
-              {!loading &&
+              {hasSession && loading && (
+                <div className="loading">Loading hotel data...</div>
+              )}
+              {hasSession &&
+                !loading &&
                 filteredHotels.map((hotel) => (
                   <HotelCard
                     key={hotel.id}
@@ -472,15 +579,20 @@ function App() {
             {reservationsError && (
               <div className="alert alert-error">{reservationsError}</div>
             )}
-            {reservationsLoading && (
+            {hasSession && reservationsLoading && (
               <div className="loading">Loading reservations...</div>
             )}
-            {!reservationsLoading && reservations.length === 0 && (
+            {!hasSession && (
+              <div className="alert alert-empty">
+                Please sign in to view reservations.
+              </div>
+            )}
+            {hasSession && !reservationsLoading && reservations.length === 0 && (
               <div className="alert alert-empty">
                 You have no reservations yet.
               </div>
             )}
-            {!reservationsLoading && reservations.length > 0 && (
+            {hasSession && !reservationsLoading && reservations.length > 0 && (
               <>
                 {groupedReservations.upcoming.length > 0 && (
                   <>
@@ -578,7 +690,9 @@ function App() {
               const txt = await resp.text();
               throw new Error(txt || `Request failed with status ${resp.status}`);
             }
-            return resp.json();
+            const data = await resp.json();
+            persistSessionFromPayload(data);
+            return data;
           }}
           onSubmitReservation={handleCreateReservation}
           submitting={creatingReservation}

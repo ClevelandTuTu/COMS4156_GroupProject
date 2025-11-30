@@ -17,6 +17,18 @@ export default defineConfig({
       '/reservations': {
         target: DEV_PROXY_TARGET,
         changeOrigin: true
+      },
+      '/logout': {
+        target: DEV_PROXY_TARGET,
+        changeOrigin: true
+      },
+      '/oauth2': {
+        target: DEV_PROXY_TARGET,
+        changeOrigin: true
+      },
+      '/login': {
+        target: DEV_PROXY_TARGET,
+        changeOrigin: true
       }
     }
   },

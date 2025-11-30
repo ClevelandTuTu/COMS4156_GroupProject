@@ -13,6 +13,13 @@
   box-shadow: 0 35px 60px rgba(79, 70, 229, 0.35);
 }
 
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -29,6 +36,26 @@
 .subtitle {
   font-size: 0.95rem;
   max-width: 580px;
+}
+
+.auth-actions button.secondary {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.5rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-actions button.primary {
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  background: #fff;
+  color: #0ea5e9;
+  cursor: pointer;
 }
 
 .results {
