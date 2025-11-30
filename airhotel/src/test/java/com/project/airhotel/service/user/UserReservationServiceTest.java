@@ -1,21 +1,27 @@
 package com.project.airhotel.service.user;
 
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
+import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.dto.PatchReservationRequest;
 import com.project.airhotel.reservation.dto.ReservationDetailResponse;
 import com.project.airhotel.reservation.dto.ReservationSummaryResponse;
-import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.common.exception.NotFoundException;
 import com.project.airhotel.reservation.mapper.ReservationMapper;
-import com.project.airhotel.reservation.domain.Reservations;
-import com.project.airhotel.reservation.repository.ReservationsRepository;
 import com.project.airhotel.reservation.policy.UserReservationPolicy;
-import com.project.airhotel.reservation.service.UserReservationService;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
 import com.project.airhotel.reservation.service.ReservationOrchestrator;
+import com.project.airhotel.reservation.service.UserReservationService;
+import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.room.repository.RoomTypesRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -40,6 +46,12 @@ class UserReservationServiceTest {
 
   @Mock
   private ReservationMapper mapper;
+
+  @Mock
+  private HotelsRepository hotelsRepository;
+
+  @Mock
+  private RoomTypesRepository roomTypesRepository;
 
   @InjectMocks
   private UserReservationService service;
@@ -77,9 +89,23 @@ class UserReservationServiceTest {
   @DisplayName("listMyReservations → non-empty list → mapping order preserved")
   void listMyReservations_nonEmpty() {
     final Long userId = 9L;
-    final Reservations r1 = new Reservations(); r1.setId(1L);
-    final Reservations r2 = new Reservations(); r2.setId(2L);
+    final Reservations r1 = new Reservations();
+    r1.setId(1L);
+    r1.setHotelId(101L);
+    r1.setRoomTypeId(201L);
+    final Reservations r2 = new Reservations();
+    r2.setId(2L);
+    r2.setHotelId(102L);
+    r2.setRoomTypeId(202L);
     when(reservationsRepository.findByUserId(userId)).thenReturn(List.of(r1, r2));
+
+    final Hotels h1 = new Hotels(); h1.setId(101L); h1.setName("H1");
+    final Hotels h2 = new Hotels(); h2.setId(102L); h2.setName("H2");
+    when(hotelsRepository.findAllById(Mockito.any())).thenReturn(List.of(h1, h2));
+
+    final RoomTypes rt1 = new RoomTypes(); rt1.setId(201L); rt1.setName("RT1");
+    final RoomTypes rt2 = new RoomTypes(); rt2.setId(202L); rt2.setName("RT2");
+    when(roomTypesRepository.findAllById(Mockito.any())).thenReturn(List.of(rt1, rt2));
 
     final ReservationSummaryResponse s1 = mock(ReservationSummaryResponse.class);
     final ReservationSummaryResponse s2 = mock(ReservationSummaryResponse.class);
