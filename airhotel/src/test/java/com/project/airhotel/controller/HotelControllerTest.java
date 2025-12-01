@@ -175,6 +175,132 @@ class HotelControllerTest {
     }
   }
 
+  // ---------- /hotels/search ----------
+
+  @Nested
+  @DisplayName("GET " + BASE + "/search")
+  class SearchHotelsByCity {
+
+    @Test
+    void shouldReturnMatchingHotelsForCityKeyword() throws Exception {
+      Hotels h1 = mockHotel(5L, "The St. Regis New York");
+      when(h1.getCity()).thenReturn("New York");
+      Hotels h2 = mockHotel(13L, "JW Marriott Essex House");
+      when(h2.getCity()).thenReturn("New York");
+
+      when(hotelService.searchHotelsByCityFuzzy("new"))
+          .thenReturn(List.of(h1, h2));
+
+      mvc.perform(get(BASE + "/search")
+              .param("city", "new")
+              .accept(APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+          .andExpect(jsonPath("$.length()").value(2))
+          .andExpect(jsonPath("$[0].id").value(5))
+          .andExpect(jsonPath("$[1].name").value("JW Marriott Essex House"));
+
+      verify(hotelService, times(1)).searchHotelsByCityFuzzy("new");
+    }
+
+    @Test
+    void shouldReturnEmptyArrayWhenNoHotelMatches() throws Exception {
+      when(hotelService.searchHotelsByCityFuzzy("zzz"))
+          .thenReturn(List.of());
+
+      mvc.perform(get(BASE + "/search")
+              .param("city", "zzz"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.length()").value(0));
+
+      verify(hotelService).searchHotelsByCityFuzzy("zzz");
+    }
+
+    @Test
+    void shouldReturn400WhenServiceThrowsBadRequest() throws Exception {
+      when(hotelService.searchHotelsByCityFuzzy("   "))
+          .thenThrow(new ResponseStatusException(
+              HttpStatus.BAD_REQUEST, "City keyword must not be empty"));
+
+      mvc.perform(get(BASE + "/search")
+              .param("city", "   "))
+          .andExpect(status().isBadRequest());
+
+      verify(hotelService).searchHotelsByCityFuzzy("   ");
+    }
+  }
+
+  // ---------- /hotels/search/available ----------
+
+  @Nested
+  @DisplayName("GET " + BASE + "/search/available")
+  class SearchAvailableHotels {
+
+    @Test
+    void shouldReturnAvailableHotelsWhenAllDatesHaveInventory() throws Exception {
+      Hotels h = mockHotel(13L, "JW Marriott Essex House New York");
+      when(h.getCity()).thenReturn("New York");
+
+      var start = java.time.LocalDate.of(2026, 1, 10);
+      var end = java.time.LocalDate.of(2026, 1, 13);
+
+      when(hotelService.searchAvailableHotelsByCityAndDates("new", start, end))
+          .thenReturn(List.of(h));
+
+      mvc.perform(get(BASE + "/search/available")
+              .param("city", "new")
+              .param("startDate", "2026-01-10")
+              .param("endDate", "2026-01-13")
+              .accept(APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+          .andExpect(jsonPath("$.length()").value(1))
+          .andExpect(jsonPath("$[0].id").value(13))
+          .andExpect(jsonPath("$[0].name")
+              .value("JW Marriott Essex House New York"));
+
+      verify(hotelService, times(1))
+          .searchAvailableHotelsByCityAndDates("new", start, end);
+    }
+
+    @Test
+    void shouldReturnEmptyArrayWhenNoHotelAvailable() throws Exception {
+      var start = java.time.LocalDate.of(2026, 1, 10);
+      var end = java.time.LocalDate.of(2026, 1, 13);
+
+      when(hotelService.searchAvailableHotelsByCityAndDates("new", start, end))
+          .thenReturn(List.of());
+
+      mvc.perform(get(BASE + "/search/available")
+              .param("city", "new")
+              .param("startDate", "2026-01-10")
+              .param("endDate", "2026-01-13"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.length()").value(0));
+
+      verify(hotelService).searchAvailableHotelsByCityAndDates("new", start, end);
+    }
+
+    @Test
+    void shouldReturn400WhenServiceRejectsInvalidDates() throws Exception {
+      var start = java.time.LocalDate.of(2026, 1, 10);
+      var end = java.time.LocalDate.of(2026, 1, 9); // end 在 start 之前
+
+      when(hotelService.searchAvailableHotelsByCityAndDates("new", start, end))
+          .thenThrow(new ResponseStatusException(
+              HttpStatus.BAD_REQUEST, "Invalid start/end date"));
+
+      mvc.perform(get(BASE + "/search/available")
+              .param("city", "new")
+              .param("startDate", "2026-01-10")
+              .param("endDate", "2026-01-09"))
+          .andExpect(status().isBadRequest());
+
+      verify(hotelService)
+          .searchAvailableHotelsByCityAndDates("new", start, end);
+    }
+  }
+
   private static Hotels mockHotel(Long id, String name) {
     Hotels h = mock(Hotels.class);
     when(h.getId()).thenReturn(id);
