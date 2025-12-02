@@ -1,4 +1,4 @@
-package com.project.airhotel.roomtype.dto;
+package com.project.airhotel.room.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Future;

@@ -1,4 +1,4 @@
-package com.project.airhotel.roomtype.service;
+package com.project.airhotel.room.service;
 
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.common.guard.EntityGuards;
@@ -6,7 +6,7 @@ import com.project.airhotel.room.domain.RoomTypeInventory;
 import com.project.airhotel.room.domain.RoomTypes;
 import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
 import com.project.airhotel.room.repository.RoomTypesRepository;
-import com.project.airhotel.roomtype.dto.RoomTypeAvailabilityResponse;
+import com.project.airhotel.room.dto.RoomTypeAvailabilityResponse;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
