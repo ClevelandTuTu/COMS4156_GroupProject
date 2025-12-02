@@ -1,4 +1,4 @@
-package com.project.airhotel.roomtype.dto;
+package com.project.airhotel.room.dto;
 
 import java.math.BigDecimal;
 import lombok.Builder;

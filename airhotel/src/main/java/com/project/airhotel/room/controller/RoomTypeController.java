@@ -1,7 +1,7 @@
-package com.project.airhotel.roomtype.controller;
+package com.project.airhotel.room.controller;
 
-import com.project.airhotel.roomtype.dto.RoomTypeAvailabilityResponse;
-import com.project.airhotel.roomtype.service.RoomTypeAvailabilityService;
+import com.project.airhotel.room.dto.RoomTypeAvailabilityResponse;
+import com.project.airhotel.room.service.RoomTypeAvailabilityService;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
