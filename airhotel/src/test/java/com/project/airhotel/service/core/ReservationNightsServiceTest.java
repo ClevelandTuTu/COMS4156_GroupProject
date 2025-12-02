@@ -1,18 +1,20 @@
 package com.project.airhotel.service.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.service.ReservationNightsService;
+import java.time.LocalDate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
- * Unit tests for ReservationNightsService.
- * Each test explicitly states which method & branch is being tested.
+ * Unit tests for ReservationNightsService. Each test explicitly states which method & branch is
+ * being tested.
  */
 class ReservationNightsServiceTest {
 

@@ -3,6 +3,9 @@ package com.project.airhotel.common.exception;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -16,13 +19,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentConversionNotSupportedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
- * Global REST exception handler that converts common exceptions into uniform
- * ApiError responses with proper HTTP status codes.
+ * Global REST exception handler that converts common exceptions into uniform ApiError responses
+ * with proper HTTP status codes.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -37,7 +36,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(NotFoundException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public ApiError handleNotFound(final NotFoundException ex,
-                                 final HttpServletRequest req) {
+      final HttpServletRequest req) {
     return ApiError.of(
         HttpStatus.NOT_FOUND.value(),
         ex.getMessage(),
@@ -55,7 +54,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(BadRequestException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError handleBadRequest(final BadRequestException ex,
-                                   final HttpServletRequest req) {
+      final HttpServletRequest req) {
     return ApiError.of(
         HttpStatus.BAD_REQUEST.value(),
         ex.getMessage(),
@@ -63,13 +62,12 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Handle bean validation errors raised during request body binding and return
-   * 400 ApiError with field details.
+   * Handle bean validation errors raised during request body binding and return 400 ApiError with
+   * field details.
    *
    * @param ex  MethodArgumentNotValidException with binding result
    * @param req current HTTP servlet request
-   * @return ApiError with code 400 and first field error as message, plus a
-   * list of all field error details
+   * @return ApiError with code 400 and first field error as message, plus a list of error details
    */
   @ExceptionHandler(MethodArgumentNotValidException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -88,8 +86,8 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Handle javax/jakarta ConstraintViolationException and return 400 ApiError
-   * with violation details.
+   * Handle javax/jakarta ConstraintViolationException and return 400 ApiError with violation
+   * details.
    *
    * @param ex  ConstraintViolationException containing violations
    * @param req current HTTP servlet request
@@ -113,8 +111,8 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Handle Spring BindException (e.g., form or query binding) and return 400
-   * ApiError with field details.
+   * Handle Spring BindException (e.g., form or query binding) and return 400 ApiError with field
+   * details.
    *
    * @param ex  BindException with binding result
    * @param req current HTTP servlet request
@@ -123,7 +121,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(BindException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError handleBindException(final BindException ex,
-                                      final HttpServletRequest req) {
+      final HttpServletRequest req) {
     final List<String> details = ex.getBindingResult().getFieldErrors().stream()
         .map(fe -> fe.getField() + " " + fe.getDefaultMessage())
         .toList();
@@ -155,8 +153,8 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Handle argument type mismatch and return 400 ApiError. If the required type
-   * is an enum, allowed values are included.
+   * Handle argument type mismatch and return 400 ApiError. If the required type is an enum, allowed
+   * values are included.
    *
    * @param ex  MethodArgumentTypeMismatchException with details
    * @param req current HTTP servlet request
@@ -192,9 +190,8 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Handle unreadable HTTP message and try to produce a precise 400 ApiError
-   * based on the most specific cause, including Jackson and date parsing
-   * errors.
+   * Handle unreadable HTTP message and try to produce a precise 400 ApiError based on the most
+   * specific cause, including Jackson and date parsing errors.
    *
    * @param ex  HttpMessageNotReadableException with cause chain
    * @param req current HTTP servlet request
@@ -203,7 +200,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(HttpMessageNotReadableException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError handleNotReadable(final HttpMessageNotReadableException ex,
-                                    final HttpServletRequest req) {
+      final HttpServletRequest req) {
     final Throwable cause = ex.getMostSpecificCause();
 
     switch (cause) {
@@ -267,8 +264,8 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Handle database integrity issues (unique or foreign key) and return 409
-   * ApiError. Message is derived from the most specific cause.
+   * Handle database integrity issues (unique or foreign key) and return 409 ApiError. Message is
+   * derived from the most specific cause.
    *
    * @param ex  DataIntegrityViolationException from Spring Data/JPA
    * @param req current HTTP servlet request
@@ -277,7 +274,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(DataIntegrityViolationException.class)
   @ResponseStatus(HttpStatus.CONFLICT)
   public ApiError handleDataIntegrity(final DataIntegrityViolationException ex,
-                                      final HttpServletRequest req) {
+      final HttpServletRequest req) {
     final String msg;
 
     final Throwable root =
@@ -309,7 +306,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MissingPathVariableException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError handleMissingPathVar(final MissingPathVariableException ex,
-                                       final HttpServletRequest req) {
+      final HttpServletRequest req) {
     return ApiError.of(
         HttpStatus.BAD_REQUEST.value(),
         "Missing path variable: " + ex.getVariableName(),
@@ -317,8 +314,8 @@ public class GlobalExceptionHandler {
   }
 
   /**
-   * Handle MethodArgumentConversionNotSupportedException and return a 400
-   * ApiError with expected type information.
+   * Handle MethodArgumentConversionNotSupportedException and return a 400 ApiError with expected
+   * type information.
    *
    * @param ex  conversion not supported exception
    * @param req current HTTP servlet request
@@ -342,8 +339,8 @@ public class GlobalExceptionHandler {
 
 
   /**
-   * Fallback handler for any uncaught exception that should be mapped to a 500
-   * Internal Server Error.
+   * Fallback handler for any uncaught exception that should be mapped to a 500 Internal Server
+   * Error.
    *
    * @param req current HTTP servlet request
    * @return ApiError with code 500 and a generic message

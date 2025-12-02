@@ -5,12 +5,21 @@ import com.project.airhotel.reservation.dto.PatchReservationRequest;
 import com.project.airhotel.reservation.dto.ReservationUpdateRequest;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * This class centralizes the mapping logic from incoming manager-facing and
+ * user-facing reservation update requests to the immutable
+ * value object used by the domain and application services.
  */
 public class ReservationChangeAdapter {
+  /**
+   * Utility class; no instances should be created.
+   */
   private ReservationChangeAdapter() {}
 
+  /**
+   * Manager requests are allowed to modify all editable reservation fields,
+   * including room type, concrete room, dates, number of guests, currency,
+   * total price and status.
+   */
   public static ReservationChange fromManagerDto(final ReservationUpdateRequest req) {
     return ReservationChange.builder()
         .newRoomTypeId(req.getRoomTypeId())
@@ -25,6 +34,11 @@ public class ReservationChangeAdapter {
         .build();
   }
 
+  /**
+   * End users are only allowed to change a limited subset of fields,
+   * currently check-in/check-out dates and number of guests. Other fields
+   * such as price, room type and status remain under manager or system control.
+   */
   public static ReservationChange fromUserDto(final PatchReservationRequest req) {
     return ReservationChange.builder()
         .newCheckIn(req.getCheckInDate())

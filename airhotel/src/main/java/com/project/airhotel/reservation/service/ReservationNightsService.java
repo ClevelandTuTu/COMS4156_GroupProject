@@ -2,9 +2,8 @@ package com.project.airhotel.reservation.service;
 
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.reservation.domain.Reservations;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
+import org.springframework.stereotype.Service;
 
 /**
  * Service that recalculates the number of nights for a reservation based on

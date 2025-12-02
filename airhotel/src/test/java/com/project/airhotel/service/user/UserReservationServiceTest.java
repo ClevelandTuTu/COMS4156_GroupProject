@@ -1,33 +1,52 @@
 package com.project.airhotel.service.user;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
+import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.dto.PatchReservationRequest;
 import com.project.airhotel.reservation.dto.ReservationDetailResponse;
 import com.project.airhotel.reservation.dto.ReservationSummaryResponse;
-import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.common.exception.NotFoundException;
 import com.project.airhotel.reservation.mapper.ReservationMapper;
-import com.project.airhotel.reservation.domain.Reservations;
-import com.project.airhotel.reservation.repository.ReservationsRepository;
 import com.project.airhotel.reservation.policy.UserReservationPolicy;
-import com.project.airhotel.reservation.service.UserReservationService;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
 import com.project.airhotel.reservation.service.ReservationOrchestrator;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-
+import com.project.airhotel.reservation.service.UserReservationService;
+import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.room.repository.RoomTypesRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Unit tests for UserReservationService. Each test states which method & which
- * branch is being exercised.
+ * Unit tests for UserReservationService. Each test states which method & which branch is being
+ * exercised.
  */
 @ExtendWith(MockitoExtension.class)
 class UserReservationServiceTest {
@@ -40,6 +59,12 @@ class UserReservationServiceTest {
 
   @Mock
   private ReservationMapper mapper;
+
+  @Mock
+  private HotelsRepository hotelsRepository;
+
+  @Mock
+  private RoomTypesRepository roomTypesRepository;
 
   @InjectMocks
   private UserReservationService service;
@@ -77,9 +102,24 @@ class UserReservationServiceTest {
   @DisplayName("listMyReservations → non-empty list → mapping order preserved")
   void listMyReservations_nonEmpty() {
     final Long userId = 9L;
-    final Reservations r1 = new Reservations(); r1.setId(1L);
-    final Reservations r2 = new Reservations(); r2.setId(2L);
+    final Reservations r1 = new Reservations();
+    r1.setId(1L);
+    r1.setHotelId(101L);
+    r1.setRoomTypeId(201L);
+
+    final Reservations r2 = new Reservations();
+    r2.setId(2L);
+    r2.setHotelId(102L);
+    r2.setRoomTypeId(202L);
     when(reservationsRepository.findByUserId(userId)).thenReturn(List.of(r1, r2));
+
+    final Hotels h1 = new Hotels(); h1.setId(101L); h1.setName("H1");
+    final Hotels h2 = new Hotels(); h2.setId(102L); h2.setName("H2");
+    when(hotelsRepository.findAllById(Mockito.any())).thenReturn(List.of(h1, h2));
+
+    final RoomTypes rt1 = new RoomTypes(); rt1.setId(201L); rt1.setName("RT1");
+    final RoomTypes rt2 = new RoomTypes(); rt2.setId(202L); rt2.setName("RT2");
+    when(roomTypesRepository.findAllById(Mockito.any())).thenReturn(List.of(rt1, rt2));
 
     final ReservationSummaryResponse s1 = mock(ReservationSummaryResponse.class);
     final ReservationSummaryResponse s2 = mock(ReservationSummaryResponse.class);
@@ -98,7 +138,8 @@ class UserReservationServiceTest {
   @Test
   @DisplayName("getMyReservation → found → mapped to detail")
   void getMyReservation_exists() {
-    final Long userId = 9L, id = 100L;
+    final Long userId = 9L;
+    final Long id = 100L;
     final Reservations r = baseReservation();
     when(reservationsRepository.findByIdAndUserId(id, userId)).thenReturn(Optional.of(r));
 
@@ -152,7 +193,8 @@ class UserReservationServiceTest {
   }
 
   @Test
-  @DisplayName("patchMyReservation → happy path: dates change only → orchestrator called with UserReservationPolicy, then mapped")
+  @DisplayName("patchMyReservation → happy path: dates change only → orchestrator called with"
+      + " UserReservationPolicy, then mapped")
   void patchMyReservation_datesChange() {
     final Reservations r = baseReservation();
     when(reservationsRepository.findByIdAndUserId(100L, 9L)).thenReturn(Optional.of(r));
@@ -166,7 +208,8 @@ class UserReservationServiceTest {
     updated.setCheckInDate(LocalDate.of(2025, 10, 23));
     updated.setCheckOutDate(LocalDate.of(2025, 10, 25));
 
-    when(orchestrator.modifyReservation(eq(r.getHotelId()), eq(r), any(), any(UserReservationPolicy.class)))
+    when(orchestrator.modifyReservation(eq(r.getHotelId()), eq(r), any(),
+        any(UserReservationPolicy.class)))
         .thenReturn(updated);
 
     final ReservationDetailResponse detail = mock(ReservationDetailResponse.class);
@@ -176,9 +219,7 @@ class UserReservationServiceTest {
 
     assertSame(detail, out);
     verify(orchestrator).modifyReservation(eq(1L), same(r), argThat(ch ->
-        ch.newCheckIn() != null &&
-            ch.newCheckOut() != null &&
-            ch.newNumGuests() == null
+        ch.newCheckIn() != null && ch.newCheckOut() != null && ch.newNumGuests() == null
     ), any(UserReservationPolicy.class));
   }
 
@@ -212,7 +253,8 @@ class UserReservationServiceTest {
   }
 
   @Test
-  @DisplayName("cancelMyReservation → found → delegates to orchestrator.cancel with reason 'user-cancel'")
+  @DisplayName("cancelMyReservation → found → delegates to orchestrator.cancel with "
+      + "reason 'user-cancel'")
   void cancelMyReservation_delegates() {
     final Reservations r = baseReservation();
     when(reservationsRepository.findByIdAndUserId(100L, 9L)).thenReturn(Optional.of(r));

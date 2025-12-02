@@ -1,7 +1,6 @@
 package com.project.airhotel.common.exception;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 

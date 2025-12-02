@@ -2,19 +2,17 @@ package com.project.airhotel.reservation.repository;
 
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
+import java.time.LocalDate;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.util.List;
-
 /**
  * Spring Data JPA repository for Reservations. Provides CRUD plus custom query
  * methods to fetch reservations by hotel scope, status, stay date ranges, and
  * ownership by user.
- * <p>
  * Author: Ziyang Su Version: 1.0.0
  */
 @Repository

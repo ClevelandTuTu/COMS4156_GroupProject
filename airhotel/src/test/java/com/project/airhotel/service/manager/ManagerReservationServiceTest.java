@@ -1,29 +1,5 @@
 package com.project.airhotel.service.manager;
 
-import com.project.airhotel.common.exception.NotFoundException;
-import com.project.airhotel.reservation.dto.ApplyUpgradeRequest;
-import com.project.airhotel.reservation.dto.ReservationUpdateRequest;
-import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.common.guard.EntityGuards;
-import com.project.airhotel.reservation.domain.Reservations;
-import com.project.airhotel.reservation.domain.enums.ReservationStatus;
-import com.project.airhotel.reservation.domain.enums.UpgradeStatus;
-import com.project.airhotel.reservation.repository.ReservationsRepository;
-import com.project.airhotel.reservation.service.ManagerReservationService;
-import com.project.airhotel.reservation.service.ReservationOrchestrator;
-import com.project.airhotel.reservation.service.ReservationStatusService;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CANCELED;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_IN;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_OUT;
@@ -46,9 +22,32 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.common.guard.EntityGuards;
+import com.project.airhotel.reservation.domain.Reservations;
+import com.project.airhotel.reservation.domain.enums.ReservationStatus;
+import com.project.airhotel.reservation.domain.enums.UpgradeStatus;
+import com.project.airhotel.reservation.dto.ApplyUpgradeRequest;
+import com.project.airhotel.reservation.dto.ReservationUpdateRequest;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.reservation.service.ManagerReservationService;
+import com.project.airhotel.reservation.service.ReservationOrchestrator;
+import com.project.airhotel.reservation.service.ReservationStatusService;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 /**
- * Unit tests for ManagerReservationService. Each test states which method &
- * which branch is being exercised.
+ * Unit tests for ManagerReservationService. Each test states which method & which branch is being
+ * exercised.
  */
 @ExtendWith(MockitoExtension.class)
 class ManagerReservationServiceTest {
@@ -90,10 +89,10 @@ class ManagerReservationServiceTest {
     final var expected = List.of(baseRes());
     doNothing().when(entityGuards).ensureHotelExists(1L);
     when(reservationsRepository.findByHotelIdAndStatusAndStayRange(1L, CONFIRMED,
-        LocalDate.of(2025,10,1), LocalDate.of(2025,10,31))).thenReturn(expected);
+        LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31))).thenReturn(expected);
 
     final var out = service.listReservations(1L, CONFIRMED,
-        LocalDate.of(2025,10,1), LocalDate.of(2025,10,31));
+        LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31));
 
     assertEquals(expected, out);
   }
@@ -104,10 +103,11 @@ class ManagerReservationServiceTest {
     final var expected = List.of(baseRes());
     doNothing().when(entityGuards).ensureHotelExists(1L);
     when(reservationsRepository.findByHotelIdAndStayRange(1L,
-        LocalDate.of(2025,10,1), LocalDate.of(2025,10,31))).thenReturn(expected);
+        LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31)))
+        .thenReturn(expected);
 
     final var out = service.listReservations(1L, null,
-        LocalDate.of(2025,10,1), LocalDate.of(2025,10,31));
+        LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 31));
 
     assertEquals(expected, out);
   }
@@ -168,12 +168,12 @@ class ManagerReservationServiceTest {
     when(entityGuards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(r);
 
     final ReservationUpdateRequest req = mock(ReservationUpdateRequest.class);
-    when(req.getCheckInDate()).thenReturn(LocalDate.of(2025,10,23));
-    when(req.getCheckOutDate()).thenReturn(LocalDate.of(2025,10,25));
+    when(req.getCheckInDate()).thenReturn(LocalDate.of(2025, 10, 23));
+    when(req.getCheckOutDate()).thenReturn(LocalDate.of(2025, 10, 25));
 
     final Reservations updated = baseRes();
-    updated.setCheckInDate(LocalDate.of(2025,10,23));
-    updated.setCheckOutDate(LocalDate.of(2025,10,25));
+    updated.setCheckInDate(LocalDate.of(2025, 10, 23));
+    updated.setCheckOutDate(LocalDate.of(2025, 10, 25));
 
     when(orchestrator.modifyReservation(eq(1L), same(r), any(), any())).thenReturn(updated);
 
@@ -194,7 +194,8 @@ class ManagerReservationServiceTest {
     final ReservationUpdateRequest req = mock(ReservationUpdateRequest.class);
     when(req.getStatus()).thenReturn(CHECKED_IN);
 
-    final Reservations rAfter = baseRes(); rAfter.setStatus(CHECKED_IN);
+    final Reservations rAfter = baseRes();
+    rAfter.setStatus(CHECKED_IN);
     when(orchestrator.modifyReservation(eq(1L), same(r), any(), any())).thenReturn(rAfter);
 
     final Reservations out = service.patchReservation(1L, 100L, req);
@@ -224,7 +225,8 @@ class ManagerReservationServiceTest {
   }
 
   @Test
-  @DisplayName("applyUpgrade → happy path: ensureRoomType → orchestrator.modifyReservation → set APPLIED & timestamp → save")
+  @DisplayName("applyUpgrade → happy path: ensureRoomType → orchestrator.modifyReservation → "
+      + "set APPLIED & timestamp → save")
   void applyUpgrade_happyPath() {
     final Reservations r = baseRes(); // ELIGIBLE
     when(entityGuards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(r);
@@ -260,7 +262,8 @@ class ManagerReservationServiceTest {
   @Test
   @DisplayName("checkIn → canceled → throws BadRequestException")
   void checkIn_canceled_throws() {
-    final Reservations r = baseRes(); r.setStatus(CANCELED);
+    final Reservations r = baseRes();
+    r.setStatus(CANCELED);
     when(entityGuards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(r);
     assertThrows(BadRequestException.class, () -> service.checkIn(1L, 100L));
     verifyNoInteractions(statusService);
@@ -269,7 +272,8 @@ class ManagerReservationServiceTest {
   @Test
   @DisplayName("checkIn → already CHECKED_IN → returns as-is")
   void checkIn_already() {
-    final Reservations r = baseRes(); r.setStatus(CHECKED_IN);
+    final Reservations r = baseRes();
+    r.setStatus(CHECKED_IN);
     when(entityGuards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(r);
     assertSame(r, service.checkIn(1L, 100L));
     verifyNoInteractions(statusService);
@@ -279,7 +283,8 @@ class ManagerReservationServiceTest {
   @DisplayName("checkIn → transitions via statusService")
   void checkIn_transition() {
     final Reservations r = baseRes(); // PENDING
-    final Reservations r2 = baseRes(); r2.setStatus(CHECKED_IN);
+    final Reservations r2 = baseRes();
+    r2.setStatus(CHECKED_IN);
     when(entityGuards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(r);
     when(statusService.changeStatus(r, CHECKED_IN, null, null)).thenReturn(r2);
 
@@ -291,7 +296,8 @@ class ManagerReservationServiceTest {
   @Test
   @DisplayName("checkOut → canceled → throws BadRequestException")
   void checkOut_canceled_throws() {
-    final Reservations r = baseRes(); r.setStatus(CANCELED);
+    final Reservations r = baseRes();
+    r.setStatus(CANCELED);
     when(entityGuards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(r);
     assertThrows(BadRequestException.class, () -> service.checkOut(1L, 100L));
     verifyNoInteractions(statusService);
@@ -300,7 +306,8 @@ class ManagerReservationServiceTest {
   @Test
   @DisplayName("checkOut → already CHECKED_OUT → returns as-is")
   void checkOut_already() {
-    final Reservations r = baseRes(); r.setStatus(CHECKED_OUT);
+    final Reservations r = baseRes();
+    r.setStatus(CHECKED_OUT);
     when(entityGuards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(r);
     assertSame(r, service.checkOut(1L, 100L));
     verifyNoInteractions(statusService);
@@ -310,7 +317,8 @@ class ManagerReservationServiceTest {
   @DisplayName("checkOut → transitions via statusService")
   void checkOut_transition() {
     final Reservations r = baseRes();
-    final Reservations r2 = baseRes(); r2.setStatus(CHECKED_OUT);
+    final Reservations r2 = baseRes();
+    r2.setStatus(CHECKED_OUT);
     when(entityGuards.getReservationInHotelOrThrow(1L, 100L)).thenReturn(r);
     when(statusService.changeStatus(r, CHECKED_OUT, null, null)).thenReturn(r2);
 

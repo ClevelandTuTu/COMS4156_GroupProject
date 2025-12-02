@@ -3,8 +3,8 @@ package com.project.airhotel.reservation.policy;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * Users cannot change room type, assign a concrete room,
+ * or directly change reservation status.
  */
 public class UserReservationPolicy implements ReservationChangePolicy {
 

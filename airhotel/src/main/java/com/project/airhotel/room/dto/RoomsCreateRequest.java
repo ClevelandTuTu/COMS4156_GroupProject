@@ -8,7 +8,6 @@ import lombok.Data;
  * Request payload for creating a room under a specific hotel. The service layer
  * validates hotel and room-type ownership, enforces per-hotel room-number
  * uniqueness, and may default the status when not provided.
- * <p>
  * Author: Ziyang Su Version: 1.0.0
  */
 @Data

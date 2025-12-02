@@ -1,30 +1,5 @@
 package com.project.airhotel.service.core;
 
-import com.project.airhotel.reservation.domain.ReservationChange;
-import com.project.airhotel.reservation.dto.CreateReservationRequest;
-import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.common.guard.EntityGuards;
-import com.project.airhotel.reservation.domain.Reservations;
-import com.project.airhotel.reservation.domain.enums.ReservationStatus;
-import com.project.airhotel.reservation.repository.ReservationsRepository;
-import com.project.airhotel.reservation.policy.ReservationChangePolicy;
-import com.project.airhotel.reservation.service.ReservationInventoryService;
-import com.project.airhotel.reservation.service.ReservationNightsService;
-import com.project.airhotel.reservation.service.ReservationOrchestrator;
-import com.project.airhotel.reservation.service.ReservationStatusService;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CANCELED;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_OUT;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CONFIRMED;
@@ -45,9 +20,34 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.guard.EntityGuards;
+import com.project.airhotel.reservation.domain.ReservationChange;
+import com.project.airhotel.reservation.domain.Reservations;
+import com.project.airhotel.reservation.domain.enums.ReservationStatus;
+import com.project.airhotel.reservation.dto.CreateReservationRequest;
+import com.project.airhotel.reservation.policy.ReservationChangePolicy;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.reservation.service.ReservationInventoryService;
+import com.project.airhotel.reservation.service.ReservationNightsService;
+import com.project.airhotel.reservation.service.ReservationOrchestrator;
+import com.project.airhotel.reservation.service.ReservationPricingService;
+import com.project.airhotel.reservation.service.ReservationStatusService;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 /**
- * Unit tests for ReservationOrchestrator after refactor. Cover:
- * modifyReservation (dates/type/scalars/status), createReservation, cancel.
+ * Unit tests for ReservationOrchestrator after refactor. Cover: modifyReservation
+ * (dates/type/scalars/status), createReservation, cancel.
  */
 @ExtendWith(MockitoExtension.class)
 class ReservationOrchestratorTest {
@@ -62,6 +62,8 @@ class ReservationOrchestratorTest {
   EntityGuards entityGuards;
   @Mock
   ReservationsRepository reservationsRepository;
+  @Mock
+  ReservationPricingService pricingService;
 
   @InjectMocks
   ReservationOrchestrator orchestrator;
@@ -80,8 +82,8 @@ class ReservationOrchestratorTest {
   // ===================== createReservation =====================
 
   @Test
-  @DisplayName("createReservation → happy path: guards ok, nights set, " +
-      "inventory applied, saved")
+  @DisplayName("createReservation → happy path: guards ok, nights set, "
+      + "inventory applied, saved")
   void createReservation_happy() {
     final Long userId = 9L;
     final LocalDate in = LocalDate.of(2025, 10, 20);
@@ -112,7 +114,15 @@ class ReservationOrchestratorTest {
     }).when(nightsService).recalcNightsOrThrow(any(Reservations.class),
         eq(in), eq(out));
 
-    when(reservationsRepository.save(any(Reservations.class))).thenAnswer(inv -> inv.getArgument(0));
+    final BigDecimal expectedTotal = new BigDecimal("3200.00");
+    Mockito.lenient().doAnswer(inv -> {
+      final Reservations r = inv.getArgument(0);
+      r.setPriceTotal(expectedTotal);
+      return null;
+    }).when(pricingService).recalcTotalPriceOrThrow(any(Reservations.class));
+
+    when(reservationsRepository.save(any(Reservations.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     final Reservations saved = orchestrator.createReservation(userId, req);
 
@@ -120,18 +130,20 @@ class ReservationOrchestratorTest {
     assertEquals(1L, saved.getHotelId());
     assertEquals(11L, saved.getRoomTypeId());
     assertEquals("USD", saved.getCurrency());
-    assertNull(saved.getPriceTotal());
+    assertEquals(expectedTotal, saved.getPriceTotal());
     assertEquals(in, saved.getCheckInDate());
     assertEquals(out, saved.getCheckOutDate());
     assertEquals(2, saved.getNights());
 
+    verify(nightsService).recalcNightsOrThrow(any(Reservations.class), eq(in), eq(out));
+    verify(pricingService).recalcTotalPriceOrThrow(any(Reservations.class));
     verify(inventoryService).applyRangeChangeOrThrow(1L, null, null, null,
         11L, in, out);
   }
 
   @Test
-  @DisplayName("createReservation → validations: non-positive guests and " +
-      "negative price")
+  @DisplayName("createReservation → validations: non-positive guests and "
+      + "negative price")
   void createReservation_validations() {
     final CreateReservationRequest req = mock(CreateReservationRequest.class);
     when(req.getHotelId()).thenReturn(1L);
@@ -170,15 +182,14 @@ class ReservationOrchestratorTest {
   @DisplayName("cancel → CHECKED_OUT throws")
   void cancel_checkedOut_throws() {
     final Reservations r = baseReservation(CHECKED_OUT);
-    assertThrows(BadRequestException.class, () -> orchestrator.cancel(r, "ops"
-        , 8L));
+    assertThrows(BadRequestException.class, () -> orchestrator.cancel(r, "ops", 8L));
     verifyNoInteractions(inventoryService, statusService);
     assertNull(r.getCanceledAt());
   }
 
   @Test
-  @DisplayName("cancel → happy path: unified inventory apply, timestamp set, " +
-      "status change")
+  @DisplayName("cancel → happy path: unified inventory apply, timestamp set, "
+      + "status change")
   void cancel_happy() {
     final Reservations r = baseReservation(CONFIRMED);
 
@@ -204,11 +215,12 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("cancel → if statusService throws, inventory already applied " +
-      "and timestamp set; exception bubbles")
+  @DisplayName("cancel → if statusService throws, inventory already applied "
+      + "and timestamp set; exception bubbles")
   void cancel_statusThrows() {
     final Reservations r = baseReservation(CONFIRMED);
-    doThrow(new RuntimeException("boom")).when(statusService).changeStatus(eq(r), eq(CANCELED), any(), any());
+    doThrow(new RuntimeException("boom")).when(statusService)
+        .changeStatus(eq(r), eq(CANCELED), any(), any());
     assertThrows(RuntimeException.class, () -> orchestrator.cancel(r, "r", 1L));
     verify(inventoryService).applyRangeChangeOrThrow(any(), any(), any(),
         any(), any(), any(), any());
@@ -237,8 +249,8 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("modifyReservation → dates + roomType change: nights " +
-      "recalculated, unified inventory apply, saved")
+  @DisplayName("modifyReservation → dates + roomType change: nights "
+      + "recalculated, unified inventory apply, saved")
   void modifyReservation_datesAndType() {
     final Reservations r = baseReservation(PENDING);
 
@@ -272,17 +284,19 @@ class ReservationOrchestratorTest {
     assertSame(r, out);
     assertEquals(22L, r.getRoomTypeId());
     assertEquals(3, r.getNights());
+
     verify(inventoryService).applyRangeChangeOrThrow(
         eq(1L),
         eq(11L), eq(LocalDate.of(2025, 10, 20)), eq(LocalDate.of(2025, 10, 22)),
         eq(22L), eq(newIn), eq(newOut)
     );
+    verify(pricingService).recalcTotalPriceOrThrow(r);
     verify(reservationsRepository).save(r);
   }
 
   @Test
-  @DisplayName("modifyReservation → assign concrete room requires guard and " +
-      "sets roomId")
+  @DisplayName("modifyReservation → assign concrete room requires guard and "
+      + "sets roomId")
   void modifyReservation_assignRoom() {
     final Reservations r = baseReservation(PENDING);
     doNothing().when(entityGuards).ensureHotelExists(1L);
@@ -302,8 +316,8 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("modifyReservation → invalid guests and negative price both " +
-      "throw")
+  @DisplayName("modifyReservation → invalid guests and negative price both "
+      + "throw")
   void modifyReservation_invalidScalars_throw() {
     final Reservations r = baseReservation(PENDING);
     doNothing().when(entityGuards).ensureHotelExists(1L);
@@ -369,4 +383,130 @@ class ReservationOrchestratorTest {
         () -> orchestrator.modifyReservation(1L, r, change,
             managerPolicyAllowAll()));
   }
+
+  @Test
+  @DisplayName("modifyReservation → only scalar fields change; no nights/pricing/inventory calls")
+  void modifyReservation_onlyScalars() {
+    final Reservations r = baseReservation(PENDING);
+    r.setNumGuests(1);
+    r.setCurrency("USD");
+    r.setPriceTotal(new BigDecimal("100.00"));
+    r.setNotes("old");
+
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    when(reservationsRepository.save(r)).thenAnswer(inv -> inv.getArgument(0));
+
+    final ReservationChange change = ReservationChange.builder()
+        .newNumGuests(3)
+        .newCurrency("EUR")
+        .newPriceTotal(new BigDecimal("250.00"))
+        .newNotes("updated")
+        .build();
+
+    final Reservations out = orchestrator.modifyReservation(
+        1L, r, change, managerPolicyAllowAll());
+
+    assertSame(r, out);
+    assertEquals(3, r.getNumGuests());
+    assertEquals("EUR", r.getCurrency());
+    assertEquals(new BigDecimal("250.00"), r.getPriceTotal());
+    assertEquals("updated", r.getNotes());
+
+    verifyNoInteractions(nightsService, pricingService, inventoryService);
+  }
+
+  @Test
+  @DisplayName("modifyReservation → type change with existing roomId re-validates room against new type")
+  void modifyReservation_typeChangeWithExistingRoom() {
+    final Reservations r = baseReservation(PENDING);
+    r.setRoomId(555L);
+
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 22L);
+    doNothing().when(entityGuards)
+        .ensureRoomBelongsToHotelAndType(1L, 555L, 22L);
+
+    final LocalDate newIn = r.getCheckInDate();
+    final LocalDate newOut = r.getCheckOutDate();
+    Mockito.lenient().doAnswer(inv -> {
+      final Reservations rr = inv.getArgument(0);
+      rr.setCheckInDate(newIn);
+      rr.setCheckOutDate(newOut);
+      rr.setNights((int) (newOut.toEpochDay() - newIn.toEpochDay()));
+      return rr;
+    }).when(nightsService).recalcNightsOrThrow(eq(r), eq(newIn), eq(newOut));
+
+    when(reservationsRepository.save(r)).thenAnswer(inv -> inv.getArgument(0));
+
+    final ReservationChange change = ReservationChange.builder()
+        .newRoomTypeId(22L)
+        .build();
+
+    orchestrator.modifyReservation(1L, r, change, managerPolicyAllowAll());
+
+    verify(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 22L);
+    verify(entityGuards).ensureRoomBelongsToHotelAndType(1L, 555L, 22L);
+  }
+
+  @Test
+  @DisplayName("createReservation → uses provided currency when non-null and ignores initial positive priceTotal")
+  void createReservation_customCurrency_andPositiveInitialPrice() {
+    final Long userId = 9L;
+    final LocalDate in = LocalDate.of(2025, 10, 20);
+    final LocalDate out = LocalDate.of(2025, 10, 21);
+
+    final CreateReservationRequest req = mock(CreateReservationRequest.class);
+    when(req.getHotelId()).thenReturn(1L);
+    when(req.getRoomTypeId()).thenReturn(11L);
+    when(req.getNumGuests()).thenReturn(1);
+    when(req.getCurrency()).thenReturn("EUR");
+    when(req.getPriceTotal()).thenReturn(new BigDecimal("123.45"));
+    when(req.getCheckInDate()).thenReturn(in);
+    when(req.getCheckOutDate()).thenReturn(out);
+
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 11L);
+
+    Mockito.lenient().doAnswer(inv -> {
+      final Reservations r = inv.getArgument(0);
+      r.setCheckInDate(in);
+      r.setCheckOutDate(out);
+      r.setNights(1);
+      return r;
+    }).when(nightsService).recalcNightsOrThrow(any(Reservations.class),
+        eq(in), eq(out));
+
+    final BigDecimal recalculated = new BigDecimal("999.99");
+    Mockito.lenient().doAnswer(inv -> {
+      final Reservations r = inv.getArgument(0);
+      r.setPriceTotal(recalculated);
+      return null;
+    }).when(pricingService).recalcTotalPriceOrThrow(any(Reservations.class));
+
+    when(reservationsRepository.save(any(Reservations.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    final Reservations saved = orchestrator.createReservation(userId, req);
+
+    assertEquals("EUR", saved.getCurrency());
+    assertEquals(recalculated, saved.getPriceTotal());
+  }
+
+  @Test
+  @DisplayName("createReservation → hotel guard failure short-circuits processing")
+  void createReservation_hotelGuardFails() {
+    final CreateReservationRequest req = mock(CreateReservationRequest.class);
+    when(req.getHotelId()).thenReturn(1L);
+
+    doThrow(new BadRequestException("no such hotel"))
+        .when(entityGuards).ensureHotelExists(1L);
+
+    assertThrows(BadRequestException.class,
+        () -> orchestrator.createReservation(9L, req));
+
+    verify(entityGuards).ensureHotelExists(1L);
+    verifyNoInteractions(reservationsRepository, nightsService,
+        pricingService, inventoryService);
+  }
+
 }

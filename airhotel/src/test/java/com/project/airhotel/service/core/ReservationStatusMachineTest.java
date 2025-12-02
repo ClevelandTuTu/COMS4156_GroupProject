@@ -1,10 +1,11 @@
 package com.project.airhotel.service.core;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 import com.project.airhotel.reservation.service.ReservationStatusMachine;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ReservationStatusMachineTest {
 

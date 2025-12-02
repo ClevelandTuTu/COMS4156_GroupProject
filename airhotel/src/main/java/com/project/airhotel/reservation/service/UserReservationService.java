@@ -1,27 +1,33 @@
 package com.project.airhotel.reservation.service;
 
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
+import com.project.airhotel.reservation.adapter.ReservationChangeAdapter;
+import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.dto.PatchReservationRequest;
 import com.project.airhotel.reservation.dto.ReservationDetailResponse;
 import com.project.airhotel.reservation.dto.ReservationSummaryResponse;
-import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.common.exception.NotFoundException;
 import com.project.airhotel.reservation.mapper.ReservationMapper;
-import com.project.airhotel.reservation.domain.Reservations;
-import com.project.airhotel.reservation.repository.ReservationsRepository;
-import com.project.airhotel.reservation.adapter.ReservationChangeAdapter;
 import com.project.airhotel.reservation.policy.UserReservationPolicy;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.room.repository.RoomTypesRepository;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * User-facing reservation application service. Provides list, detail, create,
  * update, and cancel operations for reservations owned by the authenticated
  * user. Write operations are transactional and coordinate nights calculation
  * and inventory adjustments as needed.
- * <p>
  * Author: Jing Wang Version: 1.0.0
  */
 @Service
@@ -40,6 +46,14 @@ public class UserReservationService {
    * Mapper from Reservations entities to API response DTOs.
    */
   private final ReservationMapper mapper;
+  /**
+   * Repository to load hotel names.
+   */
+  private final HotelsRepository hotelsRepository;
+  /**
+   * Repository to load room type names.
+   */
+  private final RoomTypesRepository roomTypesRepository;
 
   /**
    * Lists reservations that belong to the given user.
@@ -50,9 +64,17 @@ public class UserReservationService {
   public List<ReservationSummaryResponse> listMyReservations(
       final Long userId) {
     final List<Reservations> list = reservationsRepository.findByUserId(userId);
+    final Map<Long, String> hotelNames = loadHotelNames(list);
+    final Map<Long, String> roomTypeNames = loadRoomTypeNames(list);
+
     return list.stream()
-        .map(mapper::toSummary)
-        .collect(java.util.stream.Collectors.toList());
+        .map(r -> {
+          final ReservationSummaryResponse dto = mapper.toSummary(r);
+          dto.setHotelName(hotelNames.get(r.getHotelId()));
+          dto.setRoomTypeName(roomTypeNames.get(r.getRoomTypeId()));
+          return dto;
+        })
+        .collect(Collectors.toList());
   }
 
   /**
@@ -83,7 +105,6 @@ public class UserReservationService {
    * price total input - Sets dates and nights via nights service - Reserves
    * inventory for the stay range - Persists the reservation and returns a
    * detail DTO
-   * <p>
    * Note: total price calculation is intended to be handled by domain logic in
    * the future; for now the provided priceTotal is accepted after validation.
    *
@@ -109,7 +130,6 @@ public class UserReservationService {
    * Partially updates a reservation owned by the user. Supported updates: -
    * Date changes: release old inventory, recalc nights, reserve new inventory -
    * Number of guests: must be positive
-   * <p>
    * Price recalculation is a planned enhancement and not included here.
    *
    * @param userId id of the reservation owner
@@ -149,5 +169,29 @@ public class UserReservationService {
             .orElseThrow(()
                 -> new NotFoundException("Reservation not found: " + id));
     orchestrator.cancel(r, "user-cancel", userId);
+  }
+
+  private Map<Long, String> loadHotelNames(final List<Reservations> list) {
+    final Set<Long> hotelIds = list.stream()
+        .map(Reservations::getHotelId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+    if (hotelIds.isEmpty()) {
+      return Map.of();
+    }
+    return hotelsRepository.findAllById(hotelIds).stream()
+        .collect(Collectors.toMap(Hotels::getId, Hotels::getName));
+  }
+
+  private Map<Long, String> loadRoomTypeNames(final List<Reservations> list) {
+    final Set<Long> roomTypeIds = list.stream()
+        .map(Reservations::getRoomTypeId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+    if (roomTypeIds.isEmpty()) {
+      return Map.of();
+    }
+    return roomTypesRepository.findAllById(roomTypeIds).stream()
+        .collect(Collectors.toMap(RoomTypes::getId, RoomTypes::getName));
   }
 }

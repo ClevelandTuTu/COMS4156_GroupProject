@@ -1,17 +1,15 @@
 package com.project.airhotel.room.repository;
 
 import com.project.airhotel.room.domain.RoomTypeInventory;
+import jakarta.persistence.LockModeType;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Spring Data JPA repository for RoomTypeInventory. Provides CRUD operations
@@ -28,7 +26,6 @@ public interface RoomTypeInventoryRepository
    * acquiring a pessimistic write lock on the selected row. This is typically
    * used before mutating fields such as reserved, blocked, or available to
    * ensure consistency during concurrent updates.
-   * <p>
    * Locking semantics:
    * - PESSIMISTIC_WRITE prevents other transactions from acquiring locks that
    * would conflict with updates to the same row until the current transaction
@@ -64,6 +61,21 @@ public interface RoomTypeInventoryRepository
   List<RoomTypeInventory> findByHotelIdAndStayDate(
       Long hotelId,
       LocalDate stayDate
+  );
+
+  /**
+   * Retrieves room type inventory records for a hotel within a stay-date
+   * interval (inclusive).
+   *
+   * @param hotelId hotel identifier
+   * @param start   start date inclusive
+   * @param end     end date inclusive
+   * @return list of inventory rows in the given window
+   */
+  List<RoomTypeInventory> findByHotelIdAndStayDateBetween(
+      Long hotelId,
+      LocalDate start,
+      LocalDate end
   );
 
 }

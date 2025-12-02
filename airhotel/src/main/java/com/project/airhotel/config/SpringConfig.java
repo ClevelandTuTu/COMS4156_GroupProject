@@ -129,26 +129,8 @@ public class SpringConfig {
     var session = req.getSession(true);
     session.setAttribute(SESSION_USER_ID, userId);
 
-    // store jsession cookie
-    String jsessionId = session.getId();
-
-    // return JSON response instead of redirecting
-    res.setStatus(HttpStatus.OK.value());
-    res.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
-    String json = """
-      {
-        "user": {
-          "id": %d,
-          "email": "%s",
-          "name": "%s"
-        }
-      },
-      "session": {
-          "jsessionId": "%s"
-      }
-      """.formatted(userId, escape(email), escape(name), escape(jsessionId));
-    res.getWriter().write(json);
+    String redirectUrl = "http://localhost:5173/";
+    res.sendRedirect(redirectUrl);
   }
 
   private String escape(final String s) {
