@@ -2,6 +2,8 @@ package com.project.airhotel.reservation.service;
 
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.reservation.adapter.ReservationChangeAdapter;
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
@@ -11,7 +13,13 @@ import com.project.airhotel.reservation.dto.ReservationSummaryResponse;
 import com.project.airhotel.reservation.mapper.ReservationMapper;
 import com.project.airhotel.reservation.policy.UserReservationPolicy;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.room.repository.RoomTypesRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

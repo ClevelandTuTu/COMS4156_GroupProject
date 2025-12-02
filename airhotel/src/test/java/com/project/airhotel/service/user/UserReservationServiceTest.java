@@ -19,6 +19,8 @@ import static org.mockito.Mockito.when;
 
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.dto.PatchReservationRequest;
@@ -29,6 +31,8 @@ import com.project.airhotel.reservation.policy.UserReservationPolicy;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
 import com.project.airhotel.reservation.service.ReservationOrchestrator;
 import com.project.airhotel.reservation.service.UserReservationService;
+import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.room.repository.RoomTypesRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
