@@ -244,6 +244,94 @@ class GlobalExceptionHandlerTest {
     assertThat(resp.message()).isEqualTo("Internal Server Error");
   }
 
+  @Test
+  @DisplayName("MethodArgumentNotValidException → 400")
+  void handleMethodArgumentNotValid_noFieldErrors() {
+    final Object target = new Object();
+    final var br = new BeanPropertyBindingResult(target, "target");
+    final var ex = new MethodArgumentNotValidException(null, br);
+
+    final var resp = handler.handleMethodArgumentNotValid(ex, req("/x"));
+
+    assertThat(resp.code()).isEqualTo(400);
+    assertThat(resp.message()).isEqualTo("Validation failed");
+  }
+
+  @Test
+  @DisplayName("ConstraintViolationException → 400")
+  void handleConstraintViolation_noViolations() {
+    final var ex = new ConstraintViolationException(Set.of());
+    final var resp = handler.handleConstraintViolation(ex, req("/x"));
+
+    assertThat(resp.code()).isEqualTo(400);
+    assertThat(resp.message()).isEqualTo("Constraint violation");
+  }
+
+  @Test
+  @DisplayName("BindException → 400 ")
+  void handleBindException_noFieldErrors() {
+    final var target = new Object();
+    final var br = new BeanPropertyBindingResult(target, "form");
+    final var ex = new BindException(br);
+
+    final var resp = handler.handleBindException(ex, req("/x"));
+
+    assertThat(resp.code()).isEqualTo(400);
+    assertThat(resp.message()).isEqualTo("Bind failed");
+  }
+
+  @Test
+  @DisplayName("MethodArgumentTypeMismatch → 400")
+  void handleTypeMismatch_nullRequiredTypeAndValue() {
+    final var ex = new MethodArgumentTypeMismatchException(
+        null, null, "flag", null, new IllegalArgumentException("bad")
+    );
+
+    final var resp = handler.handleTypeMismatch(ex, req("/x"));
+
+    assertThat(resp.code()).isEqualTo(400);
+    assertThat(resp.message()).contains("expected required type");
+  }
+
+  @Test
+  @DisplayName("HttpMessageNotReadable → InvalidFormatException → 400")
+  void handleNotReadable_invalidFormat_nonEnum() {
+    final var cause = new InvalidFormatException(
+        null,
+        "msg",
+        123,
+        Integer.class
+    );
+    cause.prependPath(new Object(), "age");
+
+    final var ex =
+        new org.springframework.http.converter.HttpMessageNotReadableException("body", cause);
+
+    final var resp = handler.handleNotReadable(ex, req("/x"));
+
+    assertThat(resp.code()).isEqualTo(400);
+    assertThat(resp.message()).contains("age");
+    assertThat(resp.message()).contains("Integer");
+  }
+
+  @Test
+  @DisplayName("MethodArgumentConversionNotSupportedException (requiredType 为 null) → 400")
+  void handleConversionNotSupported_nullRequiredType() {
+    final var ex = new MethodArgumentConversionNotSupportedException(
+        "raw",
+        null,
+        "age",
+        (MethodParameter) null,
+        new IllegalArgumentException("no converter")
+    );
+
+    final var resp = handler.handleConversionNotSupported(ex, req("/x"));
+
+    assertThat(resp.code()).isEqualTo(400);
+    assertThat(resp.message()).contains("expected required type");
+  }
+
+
   enum Level { LOW, MEDIUM, HIGH }
 
   static class Dummy {

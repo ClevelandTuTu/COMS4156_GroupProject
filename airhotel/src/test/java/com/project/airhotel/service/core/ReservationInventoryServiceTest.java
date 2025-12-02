@@ -313,4 +313,23 @@ class ReservationInventoryServiceTest {
     verify(invRepo, never()).save(any(RoomTypeInventory.class));
     verify(invRepo, never()).saveAll(anyList());
   }
+
+  @Test
+  @DisplayName("applyRangeChangeOrThrow → same room type and identical days: net zero, no inventory writes")
+  void apply_sameTypeAndDates_noNetChange() {
+    final LocalDate in = LocalDate.now();
+    final LocalDate out = in.plusDays(2); // [in, in+1]
+
+    when(roomTypesRepo.findById(ROOM_TYPE_ID))
+        .thenReturn(Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 5)));
+
+    service.applyRangeChangeOrThrow(
+        HOTEL_ID,
+        ROOM_TYPE_ID, in, out,   // old
+        ROOM_TYPE_ID, in, out    // new
+    );
+
+    verifyNoInteractions(invRepo);
+  }
+
 }

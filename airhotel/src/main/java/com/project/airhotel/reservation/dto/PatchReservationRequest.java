@@ -1,7 +1,6 @@
 package com.project.airhotel.reservation.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
@@ -51,33 +50,4 @@ public class PatchReservationRequest {
       + "reservation")
   private Integer numGuests;
 
-  /**
-   * Cross-field validation to ensure at least one change is present.
-   *
-   * @return true if any field is non-null; false otherwise
-   */
-  @Schema(hidden = true)
-  @AssertTrue(message = "At least one change in the reservation should be "
-      + "provided")
-  public boolean atLeastOneField() {
-    return checkInDate != null
-        || checkOutDate != null
-        || numGuests != null;
-  }
-
-  /**
-   * Cross-field validation to ensure date order when both dates are provided.
-   * If either date is missing, this rule passes to let single-date updates
-   * proceed.
-   *
-   * @return true if dates are not both provided, or if checkOutDate is after checkInDate.
-   */
-  @Schema(hidden = true)
-  @AssertTrue(message = "Check out date should be after check in date")
-  public boolean isDateOrderValid() {
-    if (checkInDate != null && checkOutDate != null) {
-      return checkOutDate.isAfter(checkInDate);
-    }
-    return true;
-  }
 }
