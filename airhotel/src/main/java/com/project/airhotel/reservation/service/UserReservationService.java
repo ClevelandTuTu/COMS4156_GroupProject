@@ -38,6 +38,14 @@ public class UserReservationService {
    * Mapper from Reservations entities to API response DTOs.
    */
   private final ReservationMapper mapper;
+  /**
+   * Repository to load hotel names.
+   */
+  private final HotelsRepository hotelsRepository;
+  /**
+   * Repository to load room type names.
+   */
+  private final RoomTypesRepository roomTypesRepository;
 
   /**
    * Lists reservations that belong to the given user.
@@ -48,9 +56,17 @@ public class UserReservationService {
   public List<ReservationSummaryResponse> listMyReservations(
       final Long userId) {
     final List<Reservations> list = reservationsRepository.findByUserId(userId);
+    final Map<Long, String> hotelNames = loadHotelNames(list);
+    final Map<Long, String> roomTypeNames = loadRoomTypeNames(list);
+
     return list.stream()
-        .map(mapper::toSummary)
-        .collect(java.util.stream.Collectors.toList());
+        .map(r -> {
+          final ReservationSummaryResponse dto = mapper.toSummary(r);
+          dto.setHotelName(hotelNames.get(r.getHotelId()));
+          dto.setRoomTypeName(roomTypeNames.get(r.getRoomTypeId()));
+          return dto;
+        })
+        .collect(Collectors.toList());
   }
 
   /**
@@ -145,5 +161,29 @@ public class UserReservationService {
             .orElseThrow(()
                 -> new NotFoundException("Reservation not found: " + id));
     orchestrator.cancel(r, "user-cancel", userId);
+  }
+
+  private Map<Long, String> loadHotelNames(final List<Reservations> list) {
+    final Set<Long> hotelIds = list.stream()
+        .map(Reservations::getHotelId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+    if (hotelIds.isEmpty()) {
+      return Map.of();
+    }
+    return hotelsRepository.findAllById(hotelIds).stream()
+        .collect(Collectors.toMap(Hotels::getId, Hotels::getName));
+  }
+
+  private Map<Long, String> loadRoomTypeNames(final List<Reservations> list) {
+    final Set<Long> roomTypeIds = list.stream()
+        .map(Reservations::getRoomTypeId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+    if (roomTypeIds.isEmpty()) {
+      return Map.of();
+    }
+    return roomTypesRepository.findAllById(roomTypeIds).stream()
+        .collect(Collectors.toMap(RoomTypes::getId, RoomTypes::getName));
   }
 }
