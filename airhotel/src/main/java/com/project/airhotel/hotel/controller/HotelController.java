@@ -1,19 +1,17 @@
 package com.project.airhotel.hotel.controller;
 
-import java.time.LocalDate;
 import com.project.airhotel.hotel.service.HotelService;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.format.annotation.DateTimeFormat;
-
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * REST controller exposing read-only hotel APIs.
@@ -111,7 +109,7 @@ public final class HotelController {
    * Searches for hotels by fuzzy city name and filters them by availability
    * within the given stay date range.
    *
-   * Example:
+   * <p>Example:
    *   GET /hotels/search/available?city=new
    *   &startDate=2025-01-10&endDate=2025-01-11,
    *   2025-01-13, 2025-01-14.

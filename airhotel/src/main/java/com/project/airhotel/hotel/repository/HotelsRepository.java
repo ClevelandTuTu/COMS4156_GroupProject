@@ -3,18 +3,18 @@ package com.project.airhotel.hotel.repository;
 import com.project.airhotel.hotel.domain.Hotels;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 /**
  * Spring Data JPA repository for Hotels. Provides CRUD and pagination/sorting
  * operations for Hotels entities. The entity identifier type is Long.
- * <p>
- * Additional query methods can be added using Spring Data derived queries or
+ *
+ * <p>Additional query methods can be added using Spring Data derived queries or
  * Query annotations when needed.
- * <p>
- * Author: Ziyang Su Version: 1.0.0
+ *
+ * <p>Author: Ziyang Su Version: 1.0.0
  */
 @Repository
 public interface HotelsRepository extends JpaRepository<Hotels, Long> {
@@ -31,10 +31,10 @@ public interface HotelsRepository extends JpaRepository<Hotels, Long> {
    * Fuzzy search by city name prefix (case-insensitive).
    * Example: keyword = "new" matches "New York", "New Haven", "New Orleans".
    *
-   * We normalize by trimming and lowering case to avoid issues with
+   * <p>We normalize by trimming and lowering case to avoid issues with
    * leading/trailing spaces or case differences.
    *
-   * NOTE: we use prefix match: city LIKE :keyword% (not %keyword%),
+   * <p>NOTE: we use prefix match: city LIKE :keyword% (not %keyword%),
    *       to avoid weird matches like "ReNew Hotel".
    *
    * @param keyword partial city prefix, e.g. "new"

@@ -1,26 +1,30 @@
-package com.project.airhotel.publicApi;
+package com.project.airhotel.hotel.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.room.domain.RoomTypeInventory;
 import com.project.airhotel.room.domain.RoomTypes;
-import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
 import com.project.airhotel.room.repository.RoomTypesRepository;
 import com.project.airhotel.room.repository.RoomsRepository;
-import com.project.airhotel.hotel.service.HotelService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Unit tests for HotelService (public API layer).
@@ -212,16 +216,17 @@ class HotelServiceTest {
 
   @Test
   void searchAvailableHotels_shouldReturnHotelWhenAllDatesHaveAvailableInventory() {
-    String keyword = "new";
-    LocalDate start = LocalDate.of(2026, 1, 10);
-    LocalDate end = LocalDate.of(2026, 1, 13);
+    // Given
+    final String keyword = "new";
+    final LocalDate start = LocalDate.of(2026, 1, 10);
+    final LocalDate end = LocalDate.of(2026, 1, 13);
 
     // Candidate hotel returned by repository search
     Hotels h = new Hotels();
     h.setId(13L);
     h.setCity("New York");
 
-    when(hotelsRepo.searchCityByPrefix("new"))
+    when(hotelsRepo.searchCityByPrefix(keyword))
         .thenReturn(List.of(h));
 
     // Create an inventory entry with available > 0
@@ -244,13 +249,15 @@ class HotelServiceTest {
     when(roomTypeInventoryRepo.findByHotelIdAndStayDate(13L, LocalDate.of(2026, 1, 12)))
         .thenReturn(List.of(inv));
 
+    // When
     List<Hotels> result =
         hotelService.searchAvailableHotelsByCityAndDates(keyword, start, end);
 
+    // Then
     assertEquals(1, result.size());
     assertEquals(13L, result.get(0).getId());
 
-    verify(hotelsRepo, times(1)).searchCityByPrefix("new");
+    verify(hotelsRepo, times(1)).searchCityByPrefix(keyword);
     verify(roomTypeInventoryRepo, times(1))
         .findByHotelIdAndStayDate(13L, LocalDate.of(2026, 1, 10));
     verify(roomTypeInventoryRepo, times(1))
@@ -261,16 +268,17 @@ class HotelServiceTest {
 
   @Test
   void searchAvailableHotels_shouldExcludeHotelIfAnyDayIsUnavailable() {
-    String keyword = "new";
-    LocalDate start = LocalDate.of(2026, 1, 10);
-    LocalDate end = LocalDate.of(2026, 1, 13);
+    // Given
+    final String keyword = "new";
+    final LocalDate start = LocalDate.of(2026, 1, 10);
+    final LocalDate end = LocalDate.of(2026, 1, 13);
 
     // Candidate hotel from fuzzy search
     Hotels h = new Hotels();
     h.setId(13L);
     h.setCity("New York");
 
-    when(hotelsRepo.searchCityByPrefix("new"))
+    when(hotelsRepo.searchCityByPrefix(keyword))
         .thenReturn(List.of(h));
 
     // Day 1: available > 0
@@ -305,9 +313,11 @@ class HotelServiceTest {
 
     // Day 3 won't be checked because service returns false early
 
+    // When
     List<Hotels> result =
         hotelService.searchAvailableHotelsByCityAndDates(keyword, start, end);
 
+    // Then
     assertTrue(result.isEmpty(),
         "If any date has no available rooms, the hotel must be excluded.");
   }

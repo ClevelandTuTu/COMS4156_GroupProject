@@ -1,21 +1,20 @@
 package com.project.airhotel.hotel.service;
 
 import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.room.domain.RoomTypeInventory;
 import com.project.airhotel.room.domain.RoomTypes;
-import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
 import com.project.airhotel.room.repository.RoomTypesRepository;
 import com.project.airhotel.room.repository.RoomsRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Service layer handling hotel-related operations such as retrieving
@@ -140,8 +139,8 @@ public final class HotelService {
 
   /**
    * Performs a fuzzy search for hotels based on city name prefix.
-   * <p>
-   * This method returns hotels whose city names <b>start with</b> the
+   *
+   * <p>This method returns hotels whose city names <b>start with</b> the
    * provided keyword (case-insensitive). For example, keyword "new"
    * will match "New York", "New Haven", "New Orleans", but will not
    * match "Renew Hotel".
