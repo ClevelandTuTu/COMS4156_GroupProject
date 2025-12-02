@@ -44,6 +44,54 @@ Running in local machine:
 - You need to download the .env file and set it to the environment variables for the cloud database and Google Auth.
     Download at: https://drive.google.com/file/d/1zYrPjETGtAKodVH8Y8lzHW-6dtofgcCF/view?usp=sharing
 - Integration test with Postman by REST API endpoints.
+
+**Following is our CI yaml file that we can see as an example on how to build & run the application:**
+```yaml
+name: Maven CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Build & Test
+        working-directory: airhotel
+        run: mvn -B clean verify
+
+      - name: Generate Code Coverage
+        working-directory: airhotel
+        run: mvn jacoco:report
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: airhotel/target/site/jacoco
+
+      - name: Run Checkstyle
+        working-directory: airhotel
+        run: mvn checkstyle:check
+
+      - name: Run PMD
+        working-directory: airhotel
+        run: mvn pmd:check
+```
+
+**Note:** Client Program documentation setup is written inside `root/client_program` folder
+
 ---
 
 ## 3. API Endpoints
@@ -137,9 +185,39 @@ Running in local machine:
 
 --- 
 
----
+## 5. Static Code Analysis
+`Google Checkstyle` to enforce coding standards and style rules.
+- Included following dependency in our pom file:
+  - ```
+      <!-- Google Checkstyle -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.3.1</version>
+        <configuration>
+          <configLocation>google_checks.xml</configLocation>
+          <!-- <configLocation>sun_checks.xml</configLocation> -->
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <failsOnError>false</failsOnError>
+        </configuration>
+      </plugin>
+    ```
+- Then, two options for validation:
+  - Validates *indentation, whitespace, naming conventions, Javadoc, etc.*
+  - First, We can run mvn:mvn checkstyle locally in terminal and generate a xml report file inside *target/checkstyle-result.xml*.
+  - Second, we have added a section in our *Github CI yaml file*. The Github action will fail if checkstyles do not pass.
+    - Also, we have added a section for `PMD Analysis` checking for logic level programming issues such as *unused vars, dead code, bad practices and complexity*.
+```yaml
+  - name: Run Checkstyle
+    working-directory: airhotel
+    run: mvn checkstyle:check
+  - name: Run PMD
+    working-directory: airhotel
+    run: mvn pmd:check
+```
 
-## 5. Project Agile/Kanban Board
+---
+## 6. Project Agile/Kanban Board
 
 Github Project Board:
 https://github.com/users/ClevelandTuTu/projects/1
