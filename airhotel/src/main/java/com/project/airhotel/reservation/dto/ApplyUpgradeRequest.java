@@ -8,7 +8,6 @@ import lombok.Data;
  * client must specify the target room type that belongs to the same hotel as
  * the current reservation. Validation of ownership and availability is
  * performed by the application/service layer.
- * <p>
  * Author: Ziyang Su Version: 1.0.0
  */
 @Data

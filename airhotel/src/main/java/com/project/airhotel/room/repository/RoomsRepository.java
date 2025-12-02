@@ -2,18 +2,16 @@ package com.project.airhotel.room.repository;
 
 import com.project.airhotel.room.domain.Rooms;
 import com.project.airhotel.room.domain.enums.RoomStatus;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 /**
  * Spring Data JPA repository for Rooms. Provides CRUD operations plus custom
  * queries scoped by hotel, status filtering, and room-number existence checks
  * within a hotel.
- * <p>
  * Author: Ziyang Su Version: 1.0.0
  */
 @Repository
@@ -63,8 +61,7 @@ public interface RoomsRepository extends JpaRepository<Rooms, Long> {
    *
    * @param hotelId    hotel identifier
    * @param roomNumber room number to test
-   * @return true if a room with the same number exists under the hotel, false
-   * otherwise
+   * @return true if a room with the same number exists under the hotel, false otherwise
    */
   @Query("SELECT COUNT(r) > 0 FROM Rooms r WHERE r.hotelId = :hotelId AND r"
       + ".roomNumber = :roomNumber")

@@ -5,15 +5,13 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
-import lombok.Data;
-
 import java.time.LocalDate;
+import lombok.Data;
 
 /**
  * Command object for partially updating a reservation owned by the user.
  * Supports changing stay dates and number of guests. Field-level and
  * cross-field validations ensure inputs are consistent and meaningful.
- * <p>
  * Validation summary:
  * - At least one field must be provided (check-in, check-out, or numGuests)
  * - checkInDate must be today or in the future when provided
@@ -72,8 +70,7 @@ public class PatchReservationRequest {
    * If either date is missing, this rule passes to let single-date updates
    * proceed.
    *
-   * @return true if dates are not both provided, or if checkOutDate is after
-   * checkInDate
+   * @return true if dates are not both provided, or if checkOutDate is after checkInDate.
    */
   @Schema(hidden = true)
   @AssertTrue(message = "Check out date should be after check in date")

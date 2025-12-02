@@ -1,12 +1,12 @@
 package com.project.airhotel.reservation.policy;
 
-import com.project.airhotel.reservation.domain.ReservationChange;
 import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.reservation.domain.ReservationChange;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * Implementations decide whether a caller may change room type, assign a
+ * concrete room, or set a reservation to a given status.
  */
 public interface ReservationChangePolicy {
   boolean allowChangeRoomType();
@@ -15,6 +15,13 @@ public interface ReservationChangePolicy {
 
   boolean allowStatusChangeTo(ReservationStatus to);
 
+  /**
+   * Validates against this policy and throws an exception
+   * if any requested change is not permitted.
+   *
+   * @param change the requested reservation change
+   * @throws BadRequestException if the change violates this policy
+   */
   default void verifyOrThrow(final ReservationChange change) {
     if (change.newRoomTypeId() != null && !allowChangeRoomType()) {
       throw new BadRequestException("Not allowed to change room type.");

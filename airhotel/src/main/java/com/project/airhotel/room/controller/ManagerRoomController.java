@@ -1,11 +1,12 @@
 package com.project.airhotel.room.controller;
 
-import com.project.airhotel.room.dto.RoomUpdateRequest;
-import com.project.airhotel.room.dto.RoomsCreateRequest;
 import com.project.airhotel.room.domain.Rooms;
 import com.project.airhotel.room.domain.enums.RoomStatus;
+import com.project.airhotel.room.dto.RoomUpdateRequest;
+import com.project.airhotel.room.dto.RoomsCreateRequest;
 import com.project.airhotel.room.service.ManagerRoomService;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -19,15 +20,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 /**
  * Manager-facing REST controller for room operations. Exposes endpoints to
  * list, create, update, and delete rooms under a specific hotel. All business
  * logic is delegated to ManagerRoomService.
- * <p>
  * Base path: /manager/hotels/{hotelId}/rooms
- * <p>
  * Author: Ziyang Su Version: 1.0.0
  */
 @Validated
@@ -53,7 +50,6 @@ public class ManagerRoomController {
 
   /**
    * Lists rooms for a hotel with an optional status filter.
-   * <p>
    * GET /manager/hotels/{hotelId}/rooms Example: GET
    * /manager/hotels/{hotelId}/rooms?status=available
    *
@@ -71,7 +67,6 @@ public class ManagerRoomController {
 
   /**
    * Creates a new room under the given hotel.
-   * <p>
    * POST /manager/hotels/{hotelId}/rooms
    *
    * @param hotelId hotel identifier
@@ -90,7 +85,6 @@ public class ManagerRoomController {
 
   /**
    * Partially updates an existing room that belongs to the hotel.
-   * <p>
    * PATCH /manager/hotels/{hotelId}/rooms/{roomId}
    *
    * @param hotelId hotel identifier
@@ -109,7 +103,6 @@ public class ManagerRoomController {
   /**
    * Deletes a room that belongs to the hotel. Returns 204 No Content on
    * success.
-   * <p>
    * DELETE /manager/hotels/{hotelId}/rooms/{roomId}
    *
    * @param hotelId hotel identifier

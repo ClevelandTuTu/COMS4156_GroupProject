@@ -1,10 +1,10 @@
 package com.project.airhotel.room.repository;
 
 import com.project.airhotel.room.domain.RoomTypes;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 
 /**
  * Spring Data JPA repository for RoomTypes. Provides CRUD and

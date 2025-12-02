@@ -8,20 +8,19 @@ import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.policy.ReservationChangePolicy;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 /**
- * Orchestrates multi-step reservation operations that must stay consistent,
- * such as canceling a booking while releasing inventory and recording status
- * history.
+ * Orchestrates multi-step reservation operations that must stay consistent, such as canceling a
+ * booking while releasing inventory and recording status history.
  */
 @Service
 @RequiredArgsConstructor
 public class ReservationOrchestrator {
+
   /**
    * Handles day-by-day inventory adjustments.
    */
@@ -36,6 +35,19 @@ public class ReservationOrchestrator {
   private final ReservationsRepository reservationsRepository;
   private final ReservationPricingService pricingService;
 
+  /**
+   * Modify an existing reservation according to a {@link ReservationChange} and policy.
+   * The method validates boundaries and ownership, applies allowed changes to
+   * dates, room type, concrete room, scalar fields, and status, and performs
+   * the corresponding inventory and pricing updates.
+   *
+   * @param hotelId hotel id in which the reservation is managed
+   * @param r       reservation entity to modify
+   * @param change  requested change description
+   * @param policy  policy defining which fields may be changed
+   * @return the updated and persisted reservation
+   * @throws BadRequestException if validation fails or the change is not allowed
+   */
   @Transactional
   public Reservations modifyReservation(
       final Long hotelId,
@@ -46,8 +58,8 @@ public class ReservationOrchestrator {
     // 1) Boundary Check
     entityGuards.ensureHotelExists(hotelId);
     if (!r.getHotelId().equals(hotelId)) {
-      throw new BadRequestException("This reservation does not belong to the " +
-          "hotel.");
+      throw new BadRequestException("This reservation does not belong to the "
+          + "hotel.");
     }
     policy.verifyOrThrow(change);
 
@@ -57,8 +69,8 @@ public class ReservationOrchestrator {
           change.newRoomTypeId());
     }
     if (change.newRoomId() != null) {
-      final Long expectedType = change.newRoomTypeId() != null ?
-          change.newRoomTypeId() : r.getRoomTypeId();
+      final Long expectedType = change.newRoomTypeId() != null
+          ? change.newRoomTypeId() : r.getRoomTypeId();
       entityGuards.ensureRoomBelongsToHotelAndType(hotelId,
           change.newRoomId(), expectedType);
     }
@@ -70,8 +82,8 @@ public class ReservationOrchestrator {
     // 3) Calculate new date and type
     final var effIn = change.effectiveCheckIn(oldIn);
     final var effOut = change.effectiveCheckOut(oldOut);
-    final var effTypeId = change.newRoomTypeId() != null ?
-        change.newRoomTypeId() : oldTypeId;
+    final var effTypeId = change.newRoomTypeId() != null
+        ? change.newRoomTypeId() : oldTypeId;
 
     final boolean typeChanged =
         change.newRoomTypeId() != null && !change.newRoomTypeId().equals(oldTypeId);
@@ -138,9 +150,19 @@ public class ReservationOrchestrator {
     return reservationsRepository.save(r);
   }
 
+  /**
+   * Create a new reservation and allocate inventory for its stay nights.
+   * The method validates inputs, computes nights and price, performs the
+   * inventory reservation, and persists the reservation entity.
+   *
+   * @param userId caller user id
+   * @param req    DTO describing the reservation to create
+   * @return the newly created and persisted reservation
+   * @throws BadRequestException if validation fails or inventory is not available
+   */
   @Transactional
   public Reservations createReservation(final Long userId,
-                                        final CreateReservationRequest req) {
+      final CreateReservationRequest req) {
     // Boundary check
     entityGuards.ensureHotelExists(req.getHotelId());
     entityGuards.ensureRoomTypeInHotelOrThrow(req.getHotelId(),
@@ -177,19 +199,17 @@ public class ReservationOrchestrator {
   }
 
   /**
-   * Cancel a reservation if allowed. This releases the pre-occupied inventory
-   * for all nights, marks the cancellation timestamp, and persists a valid
-   * status transition with audit information.
+   * Cancel a reservation if allowed. This releases the pre-occupied inventory for all nights, marks
+   * the cancellation timestamp, and persists a valid status transition with audit information.
    *
    * @param r               reservation to cancel
    * @param reason          optional human-readable reason for auditing
-   * @param changedByUserId user id who triggers the change, can be null for
-   *                        system actions
+   * @param changedByUserId user id who triggers the change, can be null for system actions
    * @throws BadRequestException if the reservation is already checked out
    */
   @Transactional
   public void cancel(final Reservations r, final String reason,
-                     final Long changedByUserId) {
+      final Long changedByUserId) {
     if (r.getStatus() == ReservationStatus.CANCELED) {
       return;
     }

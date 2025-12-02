@@ -1,31 +1,5 @@
 package com.project.airhotel.service.core;
 
-import com.project.airhotel.reservation.domain.ReservationChange;
-import com.project.airhotel.reservation.dto.CreateReservationRequest;
-import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.common.guard.EntityGuards;
-import com.project.airhotel.reservation.domain.Reservations;
-import com.project.airhotel.reservation.domain.enums.ReservationStatus;
-import com.project.airhotel.reservation.repository.ReservationsRepository;
-import com.project.airhotel.reservation.policy.ReservationChangePolicy;
-import com.project.airhotel.reservation.service.ReservationInventoryService;
-import com.project.airhotel.reservation.service.ReservationNightsService;
-import com.project.airhotel.reservation.service.ReservationOrchestrator;
-import com.project.airhotel.reservation.service.ReservationPricingService;
-import com.project.airhotel.reservation.service.ReservationStatusService;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CANCELED;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_OUT;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CONFIRMED;
@@ -46,9 +20,34 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.guard.EntityGuards;
+import com.project.airhotel.reservation.domain.ReservationChange;
+import com.project.airhotel.reservation.domain.Reservations;
+import com.project.airhotel.reservation.domain.enums.ReservationStatus;
+import com.project.airhotel.reservation.dto.CreateReservationRequest;
+import com.project.airhotel.reservation.policy.ReservationChangePolicy;
+import com.project.airhotel.reservation.repository.ReservationsRepository;
+import com.project.airhotel.reservation.service.ReservationInventoryService;
+import com.project.airhotel.reservation.service.ReservationNightsService;
+import com.project.airhotel.reservation.service.ReservationOrchestrator;
+import com.project.airhotel.reservation.service.ReservationPricingService;
+import com.project.airhotel.reservation.service.ReservationStatusService;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 /**
- * Unit tests for ReservationOrchestrator after refactor. Cover:
- * modifyReservation (dates/type/scalars/status), createReservation, cancel.
+ * Unit tests for ReservationOrchestrator after refactor. Cover: modifyReservation
+ * (dates/type/scalars/status), createReservation, cancel.
  */
 @ExtendWith(MockitoExtension.class)
 class ReservationOrchestratorTest {
@@ -83,8 +82,8 @@ class ReservationOrchestratorTest {
   // ===================== createReservation =====================
 
   @Test
-  @DisplayName("createReservation → happy path: guards ok, nights set, " +
-      "inventory applied, saved")
+  @DisplayName("createReservation → happy path: guards ok, nights set, "
+      + "inventory applied, saved")
   void createReservation_happy() {
     final Long userId = 9L;
     final LocalDate in = LocalDate.of(2025, 10, 20);
@@ -143,8 +142,8 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("createReservation → validations: non-positive guests and " +
-      "negative price")
+  @DisplayName("createReservation → validations: non-positive guests and "
+      + "negative price")
   void createReservation_validations() {
     final CreateReservationRequest req = mock(CreateReservationRequest.class);
     when(req.getHotelId()).thenReturn(1L);
@@ -183,15 +182,14 @@ class ReservationOrchestratorTest {
   @DisplayName("cancel → CHECKED_OUT throws")
   void cancel_checkedOut_throws() {
     final Reservations r = baseReservation(CHECKED_OUT);
-    assertThrows(BadRequestException.class, () -> orchestrator.cancel(r, "ops"
-        , 8L));
+    assertThrows(BadRequestException.class, () -> orchestrator.cancel(r, "ops", 8L));
     verifyNoInteractions(inventoryService, statusService);
     assertNull(r.getCanceledAt());
   }
 
   @Test
-  @DisplayName("cancel → happy path: unified inventory apply, timestamp set, " +
-      "status change")
+  @DisplayName("cancel → happy path: unified inventory apply, timestamp set, "
+      + "status change")
   void cancel_happy() {
     final Reservations r = baseReservation(CONFIRMED);
 
@@ -217,11 +215,12 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("cancel → if statusService throws, inventory already applied " +
-      "and timestamp set; exception bubbles")
+  @DisplayName("cancel → if statusService throws, inventory already applied "
+      + "and timestamp set; exception bubbles")
   void cancel_statusThrows() {
     final Reservations r = baseReservation(CONFIRMED);
-    doThrow(new RuntimeException("boom")).when(statusService).changeStatus(eq(r), eq(CANCELED), any(), any());
+    doThrow(new RuntimeException("boom")).when(statusService)
+        .changeStatus(eq(r), eq(CANCELED), any(), any());
     assertThrows(RuntimeException.class, () -> orchestrator.cancel(r, "r", 1L));
     verify(inventoryService).applyRangeChangeOrThrow(any(), any(), any(),
         any(), any(), any(), any());
@@ -250,8 +249,8 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("modifyReservation → dates + roomType change: nights " +
-      "recalculated, unified inventory apply, saved")
+  @DisplayName("modifyReservation → dates + roomType change: nights "
+      + "recalculated, unified inventory apply, saved")
   void modifyReservation_datesAndType() {
     final Reservations r = baseReservation(PENDING);
 
@@ -296,8 +295,8 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("modifyReservation → assign concrete room requires guard and " +
-      "sets roomId")
+  @DisplayName("modifyReservation → assign concrete room requires guard and "
+      + "sets roomId")
   void modifyReservation_assignRoom() {
     final Reservations r = baseReservation(PENDING);
     doNothing().when(entityGuards).ensureHotelExists(1L);
@@ -317,8 +316,8 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("modifyReservation → invalid guests and negative price both " +
-      "throw")
+  @DisplayName("modifyReservation → invalid guests and negative price both "
+      + "throw")
   void modifyReservation_invalidScalars_throw() {
     final Reservations r = baseReservation(PENDING);
     doNothing().when(entityGuards).ensureHotelExists(1L);

@@ -4,8 +4,8 @@ import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.common.exception.NotFoundException;
 import com.project.airhotel.hotel.domain.Hotels;
 import com.project.airhotel.hotel.repository.HotelsRepository;
-import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.adapter.ReservationChangeAdapter;
+import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.dto.PatchReservationRequest;
 import com.project.airhotel.reservation.dto.ReservationDetailResponse;
@@ -15,21 +15,19 @@ import com.project.airhotel.reservation.policy.UserReservationPolicy;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
 import com.project.airhotel.room.domain.RoomTypes;
 import com.project.airhotel.room.repository.RoomTypesRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 /**
  * User-facing reservation application service. Provides list, detail, create,
  * update, and cancel operations for reservations owned by the authenticated
  * user. Write operations are transactional and coordinate nights calculation
  * and inventory adjustments as needed.
- * <p>
  * Author: Jing Wang Version: 1.0.0
  */
 @Service
@@ -107,7 +105,6 @@ public class UserReservationService {
    * price total input - Sets dates and nights via nights service - Reserves
    * inventory for the stay range - Persists the reservation and returns a
    * detail DTO
-   * <p>
    * Note: total price calculation is intended to be handled by domain logic in
    * the future; for now the provided priceTotal is accepted after validation.
    *
@@ -133,7 +130,6 @@ public class UserReservationService {
    * Partially updates a reservation owned by the user. Supported updates: -
    * Date changes: release old inventory, recalc nights, reserve new inventory -
    * Number of guests: must be positive
-   * <p>
    * Price recalculation is a planned enhancement and not included here.
    *
    * @param userId id of the reservation owner

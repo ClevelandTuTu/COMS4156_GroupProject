@@ -1,15 +1,13 @@
 package com.project.airhotel.reservation.dto;
 
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Data;
 
 /**
  * Request payload for manager-side partial updates to a reservation. All fields
  * are optional; only non-null fields are considered for update.
- * <p>
  * Semantics are enforced in the service layer (e.g., ownership checks,
  * inventory release and reserve around date or room-type changes, and status
  * transition rules).
