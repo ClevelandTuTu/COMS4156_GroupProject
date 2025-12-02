@@ -104,8 +104,13 @@ class UserReservationServiceTest {
     final Long userId = 9L;
     final Reservations r1 = new Reservations();
     r1.setId(1L);
+    r1.setHotelId(101L);
+    r1.setRoomTypeId(201L);
+
     final Reservations r2 = new Reservations();
     r2.setId(2L);
+    r2.setHotelId(102L);
+    r2.setRoomTypeId(202L);
     when(reservationsRepository.findByUserId(userId)).thenReturn(List.of(r1, r2));
 
     final Hotels h1 = new Hotels(); h1.setId(101L); h1.setName("H1");
