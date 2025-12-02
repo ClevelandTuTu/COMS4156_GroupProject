@@ -62,7 +62,7 @@ Running in local machine:
 | -----: | -------------------- | ------------------------------ | 
 |    GET | `/hotels`            | List all hotels.               |
 |    GET | `/hotels/{id}`       | Fetch hotel details.           |
-|    GET | `/hotels/{id}/rooms` | Available rooms in that hotel. |
+|    GET | `/hotels/{id}/room-types` | List room types for that hotel (no pricing). |
 
 
 ### /auth
@@ -86,6 +86,11 @@ Running in local machine:
 |    GET | `/reservations/{id}` | Fetch reservation details.        | `GET /reservations/22`                                                                                                                                                                                     | `{"id":22,"status":"CANCELED","upgradeStatus":"NOT_ELIGIBLE","checkInDate":"2025-12-21","checkOutDate":"2025-12-24","nights":3,"numGuests":1,"currency":"USD","priceTotal":799.00,"roomNumber":null,"createdAt":"2025-10-23T05:41:27Z","nightlyPrices":null,"statusHistory":null}` | `200` (OK); `404` (Not Found); `500` (Internal Server Error)         |
 |  PATCH | `/reservations/{id}` | Modify reservation.               | `PATCH /reservations/22` Body: `{"checkInDate":"2025-12-21","checkOutDate":"2025-12-24","nights":2,"numGuests":1}`                                                                                         | `{"id":"res1","hotelId":"h1","roomId":"r101","from":"2025-11-01","to":"2025-11-04","guests":2,"status":"BOOKED"}`                                                                                                                                                                  | `200` (OK); `404` (Not Found); `500` (Internal Server Error)         |
 | DELETE | `/reservations/{id}` | Cancel reservation.               | `DELETE /reservations/2`                                                                                                                                                                                   | *(empty body)*                                                                                                                                                                                                                                                                     | `204` (No Content); `404` (Not Found); `500` (Internal Server Error) |
+
+### /hotels/{hotelId}/room-types/availability
+| Method | Path | Description | Sample Input | Sample Output | Status Code |
+| -----: | ---- | ----------- | ------------ | ------------- | ----------- |
+| GET | `/hotels/{hotelId}/room-types/availability?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD&numGuests=2` | Check availability and pricing for room types in a hotel (auth required) | Query params: `checkIn`, `checkOut`, optional `numGuests` | `[{"roomTypeId":35,"code":"RC-2BR-EXEC","name":"Two-Bedroom Executive Suite","bedType":"King","capacity":4,"totalRooms":4,"available":4,"baseRate":2200.00}, ...]` | `200` (OK); `400` (Bad Request); `403` (Forbidden if unauthenticated); `500` (Internal Server Error) |
 
 
 ---
@@ -145,3 +150,22 @@ Github Project Board:
 https://github.com/users/ClevelandTuTu/projects/1
 
 --- 
+
+## 6. What developers need to know to create a client program for Airhotel service?
+
+There are two target users of the Airhotel service: 
+1. travelers; 
+2. managers of the hotels.
+
+If you are developing a platform for the travelers, here are the APIs you need to use:
+1. Auth: `/oauth2/authorization/google` (login), `/logout`, `/auth/me`.
+2. Browse hotels and room types: `GET /hotels`, `GET /hotels/{id}`, `GET /hotels/{id}/room-types`.
+3. Check availability: `GET /hotels/{hotelId}/room-types/availability?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD&numGuests=N`.
+4. Manage own reservations: `GET /reservations`, `POST /reservations`, `GET /reservations/{id}`, `PATCH /reservations/{id}`, `DELETE /reservations/{id}`.
+
+If you are developing a platform for the managers of the hotels, here are the APIs you need to use:
+1. Auth: `/oauth2/authorization/google` (login), `/logout`, `/auth/me`.
+2. Manage rooms: `GET /manager/hotels/{hotelId}/rooms`, `POST /manager/hotels/{hotelId}/rooms`, `PATCH /manager/hotels/{hotelId}/rooms/{roomId}`, `DELETE /manager/hotels/{hotelId}/rooms/{roomId}`.
+3. Manage reservations: `GET /manager/hotels/{hotelId}/reservations`, `GET /manager/hotels/{hotelId}/reservations/{reservationId}`, `PATCH /manager/hotels/{hotelId}/reservations/{reservationId}`, `PATCH /manager/hotels/{hotelId}/reservations/{reservationId}:apply-upgrade`, `PATCH /manager/hotels/{hotelId}/reservations/{reservationId}:check-in`, `PATCH /manager/hotels/{hotelId}/reservations/{reservationId}:check-out`, `DELETE /manager/hotels/{hotelId}/reservations/{reservationId}`.
+
+Details of all the APIs have been listed in previous sections.
