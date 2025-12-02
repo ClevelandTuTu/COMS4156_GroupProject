@@ -104,20 +104,4 @@ public class CreateReservationRequest {
   @Schema(description = "source reservation code if booked through third "
       + "party", example = "87J2GF")
   private String sourceReservationCode;
-
-  /**
-   * Cross-field validation to ensure date order. Returns true only when both dates are non-null and
-   * checkOutDate is strictly after checkInDate. Note: When either date is null, this returns false
-   * to surface a clear message for this rule. Null checks are also enforced by the individual
-   *
-   * @return true if checkOutDate is strictly after checkInDate; false otherwise.
-   */
-  @AssertTrue(message = "checkOutDate must be after checkInDate")
-  @Schema(hidden = true)
-  public boolean isDateOrderValid() {
-    if (checkInDate == null || checkOutDate == null) {
-      return false;
-    }
-    return checkOutDate.isAfter(checkInDate);
-  }
 }

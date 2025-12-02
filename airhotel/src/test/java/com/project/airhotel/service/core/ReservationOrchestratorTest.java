@@ -383,4 +383,130 @@ class ReservationOrchestratorTest {
         () -> orchestrator.modifyReservation(1L, r, change,
             managerPolicyAllowAll()));
   }
+
+  @Test
+  @DisplayName("modifyReservation → only scalar fields change; no nights/pricing/inventory calls")
+  void modifyReservation_onlyScalars() {
+    final Reservations r = baseReservation(PENDING);
+    r.setNumGuests(1);
+    r.setCurrency("USD");
+    r.setPriceTotal(new BigDecimal("100.00"));
+    r.setNotes("old");
+
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    when(reservationsRepository.save(r)).thenAnswer(inv -> inv.getArgument(0));
+
+    final ReservationChange change = ReservationChange.builder()
+        .newNumGuests(3)
+        .newCurrency("EUR")
+        .newPriceTotal(new BigDecimal("250.00"))
+        .newNotes("updated")
+        .build();
+
+    final Reservations out = orchestrator.modifyReservation(
+        1L, r, change, managerPolicyAllowAll());
+
+    assertSame(r, out);
+    assertEquals(3, r.getNumGuests());
+    assertEquals("EUR", r.getCurrency());
+    assertEquals(new BigDecimal("250.00"), r.getPriceTotal());
+    assertEquals("updated", r.getNotes());
+
+    verifyNoInteractions(nightsService, pricingService, inventoryService);
+  }
+
+  @Test
+  @DisplayName("modifyReservation → type change with existing roomId re-validates room against new type")
+  void modifyReservation_typeChangeWithExistingRoom() {
+    final Reservations r = baseReservation(PENDING);
+    r.setRoomId(555L);
+
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 22L);
+    doNothing().when(entityGuards)
+        .ensureRoomBelongsToHotelAndType(1L, 555L, 22L);
+
+    final LocalDate newIn = r.getCheckInDate();
+    final LocalDate newOut = r.getCheckOutDate();
+    Mockito.lenient().doAnswer(inv -> {
+      final Reservations rr = inv.getArgument(0);
+      rr.setCheckInDate(newIn);
+      rr.setCheckOutDate(newOut);
+      rr.setNights((int) (newOut.toEpochDay() - newIn.toEpochDay()));
+      return rr;
+    }).when(nightsService).recalcNightsOrThrow(eq(r), eq(newIn), eq(newOut));
+
+    when(reservationsRepository.save(r)).thenAnswer(inv -> inv.getArgument(0));
+
+    final ReservationChange change = ReservationChange.builder()
+        .newRoomTypeId(22L)
+        .build();
+
+    orchestrator.modifyReservation(1L, r, change, managerPolicyAllowAll());
+
+    verify(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 22L);
+    verify(entityGuards).ensureRoomBelongsToHotelAndType(1L, 555L, 22L);
+  }
+
+  @Test
+  @DisplayName("createReservation → uses provided currency when non-null and ignores initial positive priceTotal")
+  void createReservation_customCurrency_andPositiveInitialPrice() {
+    final Long userId = 9L;
+    final LocalDate in = LocalDate.of(2025, 10, 20);
+    final LocalDate out = LocalDate.of(2025, 10, 21);
+
+    final CreateReservationRequest req = mock(CreateReservationRequest.class);
+    when(req.getHotelId()).thenReturn(1L);
+    when(req.getRoomTypeId()).thenReturn(11L);
+    when(req.getNumGuests()).thenReturn(1);
+    when(req.getCurrency()).thenReturn("EUR");
+    when(req.getPriceTotal()).thenReturn(new BigDecimal("123.45"));
+    when(req.getCheckInDate()).thenReturn(in);
+    when(req.getCheckOutDate()).thenReturn(out);
+
+    doNothing().when(entityGuards).ensureHotelExists(1L);
+    doNothing().when(entityGuards).ensureRoomTypeInHotelOrThrow(1L, 11L);
+
+    Mockito.lenient().doAnswer(inv -> {
+      final Reservations r = inv.getArgument(0);
+      r.setCheckInDate(in);
+      r.setCheckOutDate(out);
+      r.setNights(1);
+      return r;
+    }).when(nightsService).recalcNightsOrThrow(any(Reservations.class),
+        eq(in), eq(out));
+
+    final BigDecimal recalculated = new BigDecimal("999.99");
+    Mockito.lenient().doAnswer(inv -> {
+      final Reservations r = inv.getArgument(0);
+      r.setPriceTotal(recalculated);
+      return null;
+    }).when(pricingService).recalcTotalPriceOrThrow(any(Reservations.class));
+
+    when(reservationsRepository.save(any(Reservations.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    final Reservations saved = orchestrator.createReservation(userId, req);
+
+    assertEquals("EUR", saved.getCurrency());
+    assertEquals(recalculated, saved.getPriceTotal());
+  }
+
+  @Test
+  @DisplayName("createReservation → hotel guard failure short-circuits processing")
+  void createReservation_hotelGuardFails() {
+    final CreateReservationRequest req = mock(CreateReservationRequest.class);
+    when(req.getHotelId()).thenReturn(1L);
+
+    doThrow(new BadRequestException("no such hotel"))
+        .when(entityGuards).ensureHotelExists(1L);
+
+    assertThrows(BadRequestException.class,
+        () -> orchestrator.createReservation(9L, req));
+
+    verify(entityGuards).ensureHotelExists(1L);
+    verifyNoInteractions(reservationsRepository, nightsService,
+        pricingService, inventoryService);
+  }
+
 }
