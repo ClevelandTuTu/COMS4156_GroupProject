@@ -25,9 +25,11 @@ The dev server runs at <http://localhost:5173> and proxies `/hotels`, `/reservat
 - The backend issues `JSESSIONID` on successful OAuth login; the client stores it when a response includes `session.jsessionId`. All API calls send `credentials: 'include'`.
 - Each browser/tab keeps its own cookie; multiple clients can interact simultaneously because the backend distinguishes them by their session.
 
-## Production Build
-```bash
-npm run build
-npm run preview
-```
-Deploy the generated `dist/` behind a reverse proxy that forwards `/hotels`, `/reservations`, `/logout`, and `/oauth2` to your AirHotel backend.
+## Manual Tests (UI → API → Expected Response)
+- **Sign in**: click “Sign in” → browser goes to `/oauth2/authorization/google` (redirect flow). On success, backend responds with JSON containing `session.jsessionId`; cookie `JSESSIONID` is then set to the browser.
+- **Log out**: click “Log out” → `POST /logout` with cookies → `200 OK`, JSON `{"message":"Logged out successfully"}`; client clears local state.
+- **Search Hotels**: button on Search view → `GET /hotels` → `200 OK`, body is an array of hotel objects (id, name, brand, address*, city, country, starRating, createdAt…).
+- **Room type availability**: in “Reserve Now” modal, enter guests → `GET /hotels/{hotelId}/room-types/availability?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD&numGuests=N` → `200 OK`, array of room types `{roomTypeId, code, name, bedType, capacity, totalRooms, available, baseRate}`.
+- **Create reservation**: modal “Submit” → `POST /reservations` with JSON `{hotelId, roomTypeId, checkInDate, checkOutDate, nights, numGuests, currency:"USD", priceTotal, notes:""}` → `200 OK`, body is reservation JSON; client then refetches reservations.
+- **Modify reservation**: “Modify” on a `pending`/`confirmed` card → `PATCH /reservations/{id}` with `{checkInDate, checkOutDate, nights}` → `200 OK`, body is updated reservation; client refetches list.
+- **Cancel reservation**: “Cancel” on a `pending`/`confirmed` card → `DELETE /reservations/{id}` → `200 OK` (body may be empty/JSON message); client refetches list.
