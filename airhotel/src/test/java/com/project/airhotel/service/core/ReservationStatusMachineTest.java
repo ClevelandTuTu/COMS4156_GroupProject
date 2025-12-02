@@ -1,6 +1,7 @@
 package com.project.airhotel.service.core;
 
-import com.project.airhotel.model.enums.ReservationStatus;
+import com.project.airhotel.reservation.domain.enums.ReservationStatus;
+import com.project.airhotel.reservation.service.ReservationStatusMachine;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

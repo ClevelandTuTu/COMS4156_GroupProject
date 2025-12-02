@@ -1,13 +1,13 @@
 package com.project.airhotel.publicApi;
 
-import com.project.airhotel.model.Hotels;
-import com.project.airhotel.model.RoomTypeInventory;
-import com.project.airhotel.model.RoomTypes;
-import com.project.airhotel.repository.HotelsRepository;
-import com.project.airhotel.repository.RoomTypeInventoryRepository;
-import com.project.airhotel.repository.RoomTypesRepository;
-import com.project.airhotel.repository.RoomsRepository;
-import com.project.airhotel.service.publicApi.HotelService;
+import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.room.domain.RoomTypeInventory;
+import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.hotel.repository.HotelsRepository;
+import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
+import com.project.airhotel.room.repository.RoomTypesRepository;
+import com.project.airhotel.room.repository.RoomsRepository;
+import com.project.airhotel.hotel.service.HotelService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

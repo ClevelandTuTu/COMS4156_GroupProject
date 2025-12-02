@@ -1,7 +1,8 @@
 package com.project.airhotel.controller;
 
-import com.project.airhotel.model.Hotels;
-import com.project.airhotel.service.publicApi.HotelService;
+import com.project.airhotel.hotel.controller.HotelController;
+import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.service.HotelService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

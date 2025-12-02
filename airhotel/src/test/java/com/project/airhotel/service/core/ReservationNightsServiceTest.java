@@ -1,7 +1,8 @@
 package com.project.airhotel.service.core;
 
-import com.project.airhotel.exception.BadRequestException;
-import com.project.airhotel.model.Reservations;
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.reservation.domain.Reservations;
+import com.project.airhotel.reservation.service.ReservationNightsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -22,11 +23,10 @@ class ReservationNightsServiceTest {
   @Test
   @DisplayName("recalcNightsOrThrow → branch: null dates (check-in null)")
   void recalcNights_nullCheckIn_throws() {
-    // Testing method: recalcNightsOrThrow; branch: parameter validation (check-in is null)
-    Reservations r = new Reservations();
-    LocalDate out = LocalDate.now().plusDays(1);
+    final Reservations r = new Reservations();
+    final LocalDate out = LocalDate.now().plusDays(1);
 
-    BadRequestException ex = assertThrows(
+    final BadRequestException ex = assertThrows(
         BadRequestException.class,
         () -> service.recalcNightsOrThrow(r, null, out)
     );
@@ -36,11 +36,10 @@ class ReservationNightsServiceTest {
   @Test
   @DisplayName("recalcNightsOrThrow → branch: null dates (check-out null)")
   void recalcNights_nullCheckOut_throws() {
-    // Testing method: recalcNightsOrThrow; branch: parameter validation (check-out is null)
-    Reservations r = new Reservations();
-    LocalDate in = LocalDate.now();
+    final Reservations r = new Reservations();
+    final LocalDate in = LocalDate.now();
 
-    BadRequestException ex = assertThrows(
+    final BadRequestException ex = assertThrows(
         BadRequestException.class,
         () -> service.recalcNightsOrThrow(r, in, null)
     );
@@ -50,11 +49,10 @@ class ReservationNightsServiceTest {
   @Test
   @DisplayName("recalcNightsOrThrow → branch: invalid range (check-out equals check-in)")
   void recalcNights_equalDates_throws() {
-    // Testing method: recalcNightsOrThrow; branch: date range invalid (check-out == check-in)
-    Reservations r = new Reservations();
-    LocalDate in = LocalDate.of(2025, 1, 10);
+    final Reservations r = new Reservations();
+    final LocalDate in = LocalDate.of(2025, 1, 10);
 
-    BadRequestException ex = assertThrows(
+    final BadRequestException ex = assertThrows(
         BadRequestException.class,
         () -> service.recalcNightsOrThrow(r, in, in)
     );
@@ -64,12 +62,11 @@ class ReservationNightsServiceTest {
   @Test
   @DisplayName("recalcNightsOrThrow → branch: invalid range (check-out before check-in)")
   void recalcNights_outBeforeIn_throws() {
-    // Testing method: recalcNightsOrThrow; branch: date range invalid (check-out < check-in)
-    Reservations r = new Reservations();
-    LocalDate in = LocalDate.of(2025, 1, 10);
-    LocalDate out = LocalDate.of(2025, 1, 9);
+    final Reservations r = new Reservations();
+    final LocalDate in = LocalDate.of(2025, 1, 10);
+    final LocalDate out = LocalDate.of(2025, 1, 9);
 
-    BadRequestException ex = assertThrows(
+    final BadRequestException ex = assertThrows(
         BadRequestException.class,
         () -> service.recalcNightsOrThrow(r, in, out)
     );
@@ -79,12 +76,11 @@ class ReservationNightsServiceTest {
   @Test
   @DisplayName("recalcNightsOrThrow → branch: valid range (1 night)")
   void recalcNights_valid_oneNight() {
-    // Testing method: recalcNightsOrThrow; branch: happy path (1-night stay)
-    Reservations r = new Reservations();
-    LocalDate in = LocalDate.of(2025, 3, 1);
-    LocalDate out = LocalDate.of(2025, 3, 2);
+    final Reservations r = new Reservations();
+    final LocalDate in = LocalDate.of(2025, 3, 1);
+    final LocalDate out = LocalDate.of(2025, 3, 2);
 
-    Reservations ret = service.recalcNightsOrThrow(r, in, out);
+    final Reservations ret = service.recalcNightsOrThrow(r, in, out);
 
     assertSame(r, ret, "Should return the same Reservations instance");
     assertEquals(in, r.getCheckInDate());
@@ -95,12 +91,11 @@ class ReservationNightsServiceTest {
   @Test
   @DisplayName("recalcNightsOrThrow → branch: valid range (cross month, 5 nights)")
   void recalcNights_valid_crossMonth_fiveNights() {
-    // Testing method: recalcNightsOrThrow; branch: happy path (cross-month multi-night)
-    Reservations r = new Reservations();
-    LocalDate in = LocalDate.of(2025, 1, 29);
-    LocalDate out = LocalDate.of(2025, 2, 3); // 5 nights
+    final Reservations r = new Reservations();
+    final LocalDate in = LocalDate.of(2025, 1, 29);
+    final LocalDate out = LocalDate.of(2025, 2, 3); // 5 nights
 
-    Reservations ret = service.recalcNightsOrThrow(r, in, out);
+    final Reservations ret = service.recalcNightsOrThrow(r, in, out);
 
     assertSame(r, ret);
     assertEquals(in, r.getCheckInDate());
@@ -111,17 +106,65 @@ class ReservationNightsServiceTest {
   @Test
   @DisplayName("recalcNightsOrThrow → branch: valid range (leap year across Feb 29)")
   void recalcNights_valid_leapYear() {
-    // Testing method: recalcNightsOrThrow; branch: happy path (leap-year boundary)
-    // 2028 is a leap year; span includes Feb 29
-    Reservations r = new Reservations();
-    LocalDate in = LocalDate.of(2028, 2, 28);
-    LocalDate out = LocalDate.of(2028, 3, 2); // nights = 3 (28->29, 29->1, 1->2)
+    final Reservations r = new Reservations();
+    final LocalDate in = LocalDate.of(2028, 2, 28);
+    final LocalDate out = LocalDate.of(2028, 3, 2); // nights = 3 (28->29, 29->1, 1->2)
 
-    Reservations ret = service.recalcNightsOrThrow(r, in, out);
+    final Reservations ret = service.recalcNightsOrThrow(r, in, out);
 
     assertSame(r, ret);
     assertEquals(3, r.getNights());
     assertEquals(in, r.getCheckInDate());
     assertEquals(out, r.getCheckOutDate());
   }
+
+  @Test
+  @DisplayName("recalcNightsOrThrow → valid range (year boundary, 2 nights)")
+  void recalcNights_valid_yearBoundary_twoNights() {
+    final Reservations r = new Reservations();
+    final LocalDate in = LocalDate.of(2025, 12, 31);
+    final LocalDate out = LocalDate.of(2026, 1, 2);
+
+    final Reservations ret = service.recalcNightsOrThrow(r, in, out);
+
+    assertSame(r, ret);
+    assertEquals(in, r.getCheckInDate());
+    assertEquals(out, r.getCheckOutDate());
+    assertEquals(2, r.getNights());
+  }
+
+  @Test
+  @DisplayName("recalcNightsOrThrow → valid range (30 nights)")
+  void recalcNights_valid_longStay_thirtyNights() {
+    final Reservations r = new Reservations();
+    final LocalDate in = LocalDate.of(2025, 5, 1);
+    final LocalDate out = LocalDate.of(2025, 5, 31);
+
+    final Reservations ret = service.recalcNightsOrThrow(r, in, out);
+
+    assertSame(r, ret);
+    assertEquals(in, r.getCheckInDate());
+    assertEquals(out, r.getCheckOutDate());
+    assertEquals(30, r.getNights());
+  }
+
+  @Test
+  @DisplayName("recalcNightsOrThrow → overwrites existing fields on the same instance")
+  void recalcNights_overwritesExistingFields() {
+    final Reservations r = new Reservations();
+    r.setCheckInDate(LocalDate.of(2025, 1, 1));
+    r.setCheckOutDate(LocalDate.of(2025, 1, 3));
+    r.setNights(2);
+
+    final LocalDate in = LocalDate.of(2025, 6, 10);
+    final LocalDate out = LocalDate.of(2025, 6, 15);
+
+    final Reservations ret = service.recalcNightsOrThrow(r, in, out);
+
+    assertSame(r, ret);
+    assertEquals(in, r.getCheckInDate());
+    assertEquals(out, r.getCheckOutDate());
+    assertEquals(5, r.getNights());
+  }
+
 }
