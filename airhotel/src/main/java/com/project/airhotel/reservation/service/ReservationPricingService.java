@@ -3,13 +3,16 @@ package com.project.airhotel.reservation.service;
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.room.domain.RoomTypeDailyPrice;
+import com.project.airhotel.room.domain.RoomTypes;
 import com.project.airhotel.room.repository.RoomTypeDailyPriceRepository;
+import com.project.airhotel.room.repository.RoomTypesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReservationPricingService {
   private final RoomTypeDailyPriceRepository roomTypeDailyPriceRepository;
+  private final RoomTypesRepository roomTypesRepository;
 
   public void recalcTotalPriceOrThrow(final Reservations r) {
     final LocalDate checkIn = r.getCheckInDate();
@@ -40,30 +44,52 @@ public class ReservationPricingService {
           "in date.");
     }
 
+    final RoomTypes roomType = roomTypesRepository.findById(roomTypeId)
+        .orElseThrow(() -> new BadRequestException(
+            "Room type not found: " + roomTypeId
+        ));
+
+    final BigDecimal defaultDailyPrice = roomType.getBaseRate();
+    if (defaultDailyPrice == null) {
+      throw new BadRequestException("Base rate is not configured for room type "
+          + roomTypeId);
+    }
+
     final LocalDate endInclusive = checkOut.minusDays(1);
 
     final List<RoomTypeDailyPrice> dailyPrices =
         roomTypeDailyPriceRepository.findByHotelIdAndRoomTypeIdAndStayDateBetween(
             hotelId, roomTypeId, checkIn, endInclusive);
 
-    if (dailyPrices.isEmpty()) {
-      throw new BadRequestException("No daily price found for the selected " +
-          "stay range.");
-    }
-
     final Map<LocalDate, RoomTypeDailyPrice> priceByDate =
         dailyPrices.stream()
             .collect(Collectors.toMap(RoomTypeDailyPrice::getStayDate, p -> p));
 
     BigDecimal total = BigDecimal.ZERO;
+    final List<RoomTypeDailyPrice> toSave = new ArrayList<>();
+
     LocalDate d = checkIn;
     while (d.isBefore(checkOut)) {
-      final RoomTypeDailyPrice p = priceByDate.get(d);
+      RoomTypeDailyPrice p = priceByDate.get(d);
       if (p == null) {
-        throw new BadRequestException("Missing daily price for date: " + d);
+        p = RoomTypeDailyPrice.builder()
+            .hotelId(hotelId)
+            .roomTypeId(roomTypeId)
+            .stayDate(d)
+            .price(defaultDailyPrice)
+            .computedFrom("{\"source\":\"BASE_RATE\"}")
+            .build();
+
+        toSave.add(p);
+        priceByDate.put(d, p);
       }
+
       total = total.add(p.getPrice());
       d = d.plusDays(1);
+    }
+
+    if (!toSave.isEmpty()) {
+      roomTypeDailyPriceRepository.saveAll(toSave);
     }
 
     r.setPriceTotal(total);
