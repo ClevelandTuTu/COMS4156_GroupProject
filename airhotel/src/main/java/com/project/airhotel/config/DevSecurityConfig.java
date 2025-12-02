@@ -9,7 +9,6 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Development-only security configuration.
- * <p>
  * Active when the {@code dev} Spring profile is enabled. This configuration
  * disables CSRF protection and permits all HTTP requests to simplify local
  * development and manual testing. Do not enable this profile in production.

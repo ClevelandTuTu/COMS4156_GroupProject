@@ -1,23 +1,5 @@
 package com.project.airhotel.service.core;
 
-import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.reservation.service.ReservationInventoryService;
-import com.project.airhotel.room.domain.RoomTypeInventory;
-import com.project.airhotel.room.domain.RoomTypes;
-import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
-import com.project.airhotel.room.repository.RoomTypesRepository;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,9 +15,26 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.reservation.service.ReservationInventoryService;
+import com.project.airhotel.room.domain.RoomTypeInventory;
+import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
+import com.project.airhotel.room.repository.RoomTypesRepository;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 /**
- * Unit tests for ReservationInventoryService. Focus: cover as many branches as
- * possible with clear per-test branch annotations.
+ * Unit tests for ReservationInventoryService. Focus: cover as many branches as possible with clear
+ * per-test branch annotations.
  */
 @ExtendWith(MockitoExtension.class)
 class ReservationInventoryServiceTest {
@@ -50,7 +49,7 @@ class ReservationInventoryServiceTest {
   private ReservationInventoryService service;
 
   private RoomTypeInventory inv(final int total, final int reserved,
-                                final int blocked) {
+      final int blocked) {
     final RoomTypeInventory i = new RoomTypeInventory();
     i.setHotelId(HOTEL_ID);
     i.setRoomTypeId(ROOM_TYPE_ID);
@@ -62,7 +61,7 @@ class ReservationInventoryServiceTest {
   }
 
   private RoomTypes roomType(final long hotelId, final long roomTypeId,
-                             final int totalRooms) {
+      final int totalRooms) {
     final RoomTypes rt = new RoomTypes();
     rt.setHotelId(hotelId);
     rt.setId(roomTypeId);
@@ -82,14 +81,14 @@ class ReservationInventoryServiceTest {
   }
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → missing parameters on non-empty " +
-      "side throws")
+  @DisplayName("applyRangeChangeOrThrow → missing parameters on non-empty "
+      + "side throws")
   void apply_missingParams_throws() {
     final LocalDate d = LocalDate.now();
     // missing hotelId/type/dates in old side
     final BadRequestException ex1 = assertThrows(BadRequestException.class,
-        () -> service.applyRangeChangeOrThrow(HOTEL_ID, ROOM_TYPE_ID, d, null
-            , null, null, null));
+        () -> service.applyRangeChangeOrThrow(HOTEL_ID, ROOM_TYPE_ID, d, null,
+            null, null, null));
     assertTrue(ex1.getMessage().contains("Missing old inventory parameters"));
 
     // missing required on new side
@@ -102,8 +101,8 @@ class ReservationInventoryServiceTest {
   }
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → invalid date range on either side " +
-      "throws")
+  @DisplayName("applyRangeChangeOrThrow → invalid date range on either side "
+      + "throws")
   void apply_invalidDateRange_throws() {
     final LocalDate in = LocalDate.now();
     final LocalDate outSame = in;
@@ -122,8 +121,8 @@ class ReservationInventoryServiceTest {
   }
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → room type not found / belongs to " +
-      "other hotel throws")
+  @DisplayName("applyRangeChangeOrThrow → room type not found / belongs to "
+      + "other hotel throws")
   void apply_roomTypeChecks_throw() {
     final LocalDate in = LocalDate.now();
     final LocalDate out = in.plusDays(1);
@@ -136,7 +135,8 @@ class ReservationInventoryServiceTest {
     assertTrue(nf.getMessage().contains("Room type not found"));
 
     // belongs to other hotel
-    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(Optional.of(roomType(999L, ROOM_TYPE_ID, 3)));
+    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(
+        Optional.of(roomType(999L, ROOM_TYPE_ID, 3)));
     final BadRequestException oh = assertThrows(BadRequestException.class,
         () -> service.applyRangeChangeOrThrow(HOTEL_ID, null, null, null,
             ROOM_TYPE_ID, in, out));
@@ -147,14 +147,15 @@ class ReservationInventoryServiceTest {
   // ================
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → new one-day existing row has no " +
-      "availability → throws")
+  @DisplayName("applyRangeChangeOrThrow → new one-day existing row has no "
+      + "availability → throws")
   void apply_newExisting_noAvailability_throws() {
     final LocalDate in = LocalDate.now();
     final LocalDate out = in.plusDays(1);
 
     // normalize(new) will check room type
-    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 10)));
+    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(
+        Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 10)));
 
     // precheck calls getOrInitInventoryRow → we simulate existing row with
     // no availability
@@ -170,14 +171,15 @@ class ReservationInventoryServiceTest {
   }
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → init new rows for 2 nights → " +
-      "reserved++ and saved")
+  @DisplayName("applyRangeChangeOrThrow → init new rows for 2 nights → "
+      + "reserved++ and saved")
   void apply_initNew_twoNights_success() {
     final LocalDate in = LocalDate.now();
     final LocalDate d2 = in.plusDays(1);
     final LocalDate out = in.plusDays(2);
 
-    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 4)));
+    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(
+        Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 4)));
     // both days missing initially
     when(invRepo.findForUpdate(HOTEL_ID, ROOM_TYPE_ID, in)).thenReturn(Optional.empty());
     when(invRepo.findForUpdate(HOTEL_ID, ROOM_TYPE_ID, d2)).thenReturn(Optional.empty());
@@ -187,7 +189,8 @@ class ReservationInventoryServiceTest {
     service.applyRangeChangeOrThrow(HOTEL_ID, null, null, null, ROOM_TYPE_ID,
         in, out);
 
-    @SuppressWarnings("unchecked") final ArgumentCaptor<List<RoomTypeInventory>> cap = ArgumentCaptor.forClass(List.class);
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<RoomTypeInventory>> cap = ArgumentCaptor.forClass(List.class);
     verify(invRepo).saveAll(cap.capture());
     final List<RoomTypeInventory> saved = cap.getValue();
     assertEquals(2, saved.size());
@@ -203,8 +206,8 @@ class ReservationInventoryServiceTest {
   }
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → mixed old remove + new add over 2 " +
-      "nights")
+  @DisplayName("applyRangeChangeOrThrow → mixed old remove + new add over 2 "
+      + "nights")
   void apply_mixed_remove_and_add() {
     final LocalDate inOld = LocalDate.now();
     final LocalDate outOld = inOld.plusDays(2); // [d0, d1]
@@ -234,14 +237,15 @@ class ReservationInventoryServiceTest {
 
     final boolean foundD0Decrement =
         singleSaveCap.getAllValues().stream().anyMatch(x ->
-        inOld.equals(x.getStayDate()) && x.getReserved() == 1 && x.getAvailable() == (5 - 1));
+            inOld.equals(x.getStayDate()) && x.getReserved() == 1 && x.getAvailable() == (5 - 1));
     assertTrue(foundD0Decrement, "Day0 should be decremented to reserved=1");
 
     final boolean wroteD1 = singleSaveCap.getAllValues().stream()
         .anyMatch(x -> inOld.plusDays(1).equals(x.getStayDate()));
     assertFalse(wroteD1, "Day1 should be kept; no save should occur");
 
-    @SuppressWarnings("unchecked") final ArgumentCaptor<List<RoomTypeInventory>> saveAllCap = ArgumentCaptor.forClass(List.class);
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<RoomTypeInventory>> saveAllCap = ArgumentCaptor.forClass(List.class);
     verify(invRepo).saveAll(saveAllCap.capture());
     final RoomTypeInventory addD2 = saveAllCap.getValue().stream()
         .filter(x -> d2.equals(x.getStayDate()))
@@ -254,8 +258,8 @@ class ReservationInventoryServiceTest {
   // ================ Pure removals ================
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → pure removal: present rows " +
-      "decremented and not below zero")
+  @DisplayName("applyRangeChangeOrThrow → pure removal: present rows "
+      + "decremented and not below zero")
   void apply_pureRemoval_presentRows() {
     final LocalDate in = LocalDate.now();
     final LocalDate d2 = in.plusDays(1);
@@ -266,7 +270,8 @@ class ReservationInventoryServiceTest {
     final RoomTypeInventory day2 = inv(2, 0, 0);
     day2.setStayDate(d2);
 
-    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 5)));
+    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(
+        Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 5)));
     when(invRepo.findForUpdate(HOTEL_ID, ROOM_TYPE_ID, in)).thenReturn(Optional.of(day1));
     when(invRepo.findForUpdate(HOTEL_ID, ROOM_TYPE_ID, d2)).thenReturn(Optional.of(day2));
 
@@ -290,15 +295,17 @@ class ReservationInventoryServiceTest {
   }
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → removal when both days missing does" +
-      " not write")
+  @DisplayName("applyRangeChangeOrThrow → removal when both days missing does"
+      + " not write")
   void apply_removal_missingRows_noWrites() {
     final LocalDate in = LocalDate.now();
     final LocalDate out = in.plusDays(2);
 
-    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 5)));
+    when(roomTypesRepo.findById(ROOM_TYPE_ID)).thenReturn(
+        Optional.of(roomType(HOTEL_ID, ROOM_TYPE_ID, 5)));
     when(invRepo.findForUpdate(HOTEL_ID, ROOM_TYPE_ID, in)).thenReturn(Optional.empty());
-    when(invRepo.findForUpdate(HOTEL_ID, ROOM_TYPE_ID, in.plusDays(1))).thenReturn(Optional.empty());
+    when(invRepo.findForUpdate(HOTEL_ID, ROOM_TYPE_ID, in.plusDays(1))).thenReturn(
+        Optional.empty());
 
     service.applyRangeChangeOrThrow(HOTEL_ID, ROOM_TYPE_ID, in, out, null,
         null, null);

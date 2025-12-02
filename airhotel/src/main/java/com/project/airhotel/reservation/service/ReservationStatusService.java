@@ -6,11 +6,10 @@ import com.project.airhotel.reservation.domain.ReservationsStatusHistory;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
 import com.project.airhotel.reservation.repository.ReservationsStatusHistoryRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 /**
  * Service that persists reservation status changes and writes a corresponding

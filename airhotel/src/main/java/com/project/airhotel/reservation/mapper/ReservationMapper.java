@@ -1,16 +1,14 @@
 package com.project.airhotel.reservation.mapper;
 
+import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.dto.ReservationDetailResponse;
 import com.project.airhotel.reservation.dto.ReservationSummaryResponse;
-import com.project.airhotel.reservation.domain.Reservations;
-import org.springframework.stereotype.Component;
-
 import java.time.ZoneOffset;
+import org.springframework.stereotype.Component;
 
 /**
  * Maps Reservations entities to API response DTOs. Provides both summary and
  * detail projections used by user/manager controllers.
- * <p>
  * Mapping notes:
  * - created_at is converted to Instant in UTC (ZoneOffset.UTC).
  * - roomNumber is currently set to null in the detail DTO and can be populated
@@ -22,7 +20,6 @@ public class ReservationMapper {
 
   /**
    * Maps a Reservations entity to a lightweight summary DTO.
-   * <p>
    * Fields mapped: id, status, upgradeStatus, checkInDate, checkOutDate,
    * nights, numGuests, priceTotal, createdAt (converted to UTC Instant when
    * non-null).
@@ -48,7 +45,6 @@ public class ReservationMapper {
 
   /**
    * Maps a Reservations entity to a detailed DTO.
-   * <p>
    * Fields mapped: id, status, upgradeStatus, checkInDate, checkOutDate,
    * nights, numGuests, currency, priceTotal, roomNumber (currently null),
    * createdAt (UTC Instant when non-null).

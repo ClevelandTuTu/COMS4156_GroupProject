@@ -1,5 +1,14 @@
 package com.project.airhotel.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.service.ReservationPricingService;
@@ -7,20 +16,16 @@ import com.project.airhotel.room.domain.RoomTypeDailyPrice;
 import com.project.airhotel.room.domain.RoomTypes;
 import com.project.airhotel.room.repository.RoomTypeDailyPriceRepository;
 import com.project.airhotel.room.repository.RoomTypesRepository;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for ReservationPricingService.
@@ -38,7 +43,7 @@ class ReservationPricingServiceTest {
   private ReservationPricingService pricingService;
 
   private Reservations baseReservationWithDates(final LocalDate checkIn,
-                                                final LocalDate checkOut) {
+      final LocalDate checkOut) {
     final Reservations r = new Reservations();
     r.setId(1L);
     r.setHotelId(2L);
@@ -49,9 +54,9 @@ class ReservationPricingServiceTest {
   }
 
   private RoomTypeDailyPrice dailyPrice(final Long hotelId,
-                                        final Long roomTypeId,
-                                        final LocalDate stayDate,
-                                        final String price) {
+      final Long roomTypeId,
+      final LocalDate stayDate,
+      final String price) {
     final RoomTypeDailyPrice p = new RoomTypeDailyPrice();
     p.setHotelId(hotelId);
     p.setRoomTypeId(roomTypeId);
@@ -67,7 +72,7 @@ class ReservationPricingServiceTest {
   }
 
   @Test
-  @DisplayName("recalcTotalPriceOrThrow → sums all nightly prices for stay range (no fallback needed)")
+  @DisplayName("recalcTotalPriceOrThrow → sums all nightly prices for stay range")
   void recalcTotalPrice_happyPath() {
     final LocalDate checkIn = LocalDate.of(2026, 1, 6);
     final LocalDate checkOut = LocalDate.of(2026, 1, 9);
@@ -167,7 +172,7 @@ class ReservationPricingServiceTest {
   }
 
   @Test
-  @DisplayName("recalcTotalPriceOrThrow → missing some nightly prices → fallback to baseRate for missing dates")
+  @DisplayName("recalcTotalPriceOrThrow → missing some nightly prices → fallback to baseRate")
   void recalcTotalPrice_missingDate_fallbackToBaseRate() {
     final LocalDate checkIn = LocalDate.of(2026, 1, 6);
     final LocalDate checkOut = LocalDate.of(2026, 1, 9);

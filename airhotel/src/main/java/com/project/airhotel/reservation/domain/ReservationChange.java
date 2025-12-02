@@ -1,14 +1,12 @@
 package com.project.airhotel.reservation.domain;
 
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
-import lombok.Builder;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Builder;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * This class set the policy to determine the permission.
  */
 @Builder
 public record ReservationChange(Long newRoomTypeId, Long newRoomId,

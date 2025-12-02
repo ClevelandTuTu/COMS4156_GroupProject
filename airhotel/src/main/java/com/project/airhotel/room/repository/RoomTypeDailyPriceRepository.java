@@ -1,15 +1,13 @@
 package com.project.airhotel.room.repository;
 
 import com.project.airhotel.room.domain.RoomTypeDailyPrice;
+import java.time.LocalDate;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.util.List;
-
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * Repository for room type daily price.
  */
 @Repository
 public interface RoomTypeDailyPriceRepository extends JpaRepository<RoomTypeDailyPrice, Long> {

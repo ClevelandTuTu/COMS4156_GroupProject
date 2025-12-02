@@ -3,10 +3,11 @@ package com.project.airhotel.reservation.policy;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 
 /**
- * @author Ziyang Su
- * @version 1.0.0
+ * Managers are allowed to change room type, assign a concrete room,
+ * and change reservation status.
  */
-public class ManagerReservationPolicy implements ReservationChangePolicy{
+public class ManagerReservationPolicy implements ReservationChangePolicy {
+
   @Override
   public boolean allowChangeRoomType() {
     return true;

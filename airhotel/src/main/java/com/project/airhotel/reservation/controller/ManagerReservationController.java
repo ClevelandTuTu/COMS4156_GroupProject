@@ -1,11 +1,13 @@
 package com.project.airhotel.reservation.controller;
 
-import com.project.airhotel.reservation.dto.ApplyUpgradeRequest;
-import com.project.airhotel.reservation.dto.ReservationUpdateRequest;
 import com.project.airhotel.reservation.domain.Reservations;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
+import com.project.airhotel.reservation.dto.ApplyUpgradeRequest;
+import com.project.airhotel.reservation.dto.ReservationUpdateRequest;
 import com.project.airhotel.reservation.service.ManagerReservationService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,16 +21,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.util.List;
-
 /**
  * Manager-facing REST controller for reservation operations. Exposes endpoints
  * to list, view, update, upgrade, check in, check out, and cancel reservations
  * for a specific hotel.
- * <p>
  * Base path: /manager/hotels/{hotelId}/reservations
- * <p>
  * All business logic is delegated to ManagerReservationService.
  */
 @Validated
@@ -58,7 +55,6 @@ public class ManagerReservationController {
    * provided, results are filtered by stay range. If only status is provided,
    * results are filtered by status. If no filters are provided, returns all
    * reservations for the hotel.
-   * <p>
    * GET /manager/hotels/{hotelId}/reservations
    *
    * @param hotelId hotel identifier
@@ -81,7 +77,6 @@ public class ManagerReservationController {
 
   /**
    * Retrieves a single reservation by id under the given hotel.
-   * <p>
    * GET /manager/hotels/{hotelId}/reservations/{reservationId}
    *
    * @param hotelId       hotel identifier
@@ -99,7 +94,6 @@ public class ManagerReservationController {
    * Partially updates a reservation. Supports changing room type, room id, stay
    * dates, and scalar fields, and may also change status via the status
    * machine.
-   * <p>
    * PATCH /manager/hotels/{hotelId}/reservations/{reservationId}
    *
    * @param hotelId       hotel identifier
@@ -119,7 +113,6 @@ public class ManagerReservationController {
   /**
    * Applies a room-type upgrade to a reservation when allowed by its upgrade
    * status.
-   * <p>
    * PATCH /manager/hotels/{hotelId}/reservations/{reservationId}/apply-upgrade
    *
    * @param hotelId       hotel identifier
@@ -138,7 +131,6 @@ public class ManagerReservationController {
 
   /**
    * Checks in a reservation if eligible.
-   * <p>
    * PATCH /manager/hotels/{hotelId}/reservations/{reservationId}/check-in
    *
    * @param hotelId       hotel identifier
@@ -154,7 +146,6 @@ public class ManagerReservationController {
 
   /**
    * Checks out a reservation if eligible.
-   * <p>
    * PATCH /manager/hotels/{hotelId}/reservations/{reservationId}/check-out
    *
    * @param hotelId       hotel identifier
@@ -169,7 +160,6 @@ public class ManagerReservationController {
 
   /**
    * Cancels a reservation. Returns 204 No Content on success.
-   * <p>
    * DELETE /manager/hotels/{hotelId}/reservations/{reservationId}
    *
    * @param hotelId       hotel identifier

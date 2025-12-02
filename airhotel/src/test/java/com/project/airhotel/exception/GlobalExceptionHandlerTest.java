@@ -1,5 +1,8 @@
 package com.project.airhotel.exception;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.project.airhotel.common.exception.BadRequestException;
@@ -8,6 +11,9 @@ import com.project.airhotel.common.exception.NotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import java.lang.reflect.Method;
+import java.time.format.DateTimeParseException;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -22,13 +28,6 @@ import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentConversionNotSupportedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import java.lang.reflect.Method;
-import java.time.format.DateTimeParseException;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 class GlobalExceptionHandlerTest {
 
@@ -53,9 +52,7 @@ class GlobalExceptionHandlerTest {
   @Test
   @DisplayName("BadRequestException → 400")
   void handleBadRequest() {
-    final var resp = handler.handleBadRequest(new BadRequestException("bad!")
-        , req(
-        "/x"));
+    final var resp = handler.handleBadRequest(new BadRequestException("bad!"), req("/x"));
     assertThat(resp.code()).isEqualTo(400);
     assertThat(resp.message()).isEqualTo("bad!");
   }
@@ -103,9 +100,8 @@ class GlobalExceptionHandlerTest {
   @Test
   @DisplayName("MissingServletRequestParameterException → 400")
   void handleMissingParam() throws Exception {
-    final var ex = new MissingServletRequestParameterException("q", "java" +
-        ".lang" +
-        ".String");
+    final var ex = new MissingServletRequestParameterException("q", "java"
+        + ".lang" + ".String");
     final var resp = handler.handleMissingParam(ex, req("/x"));
     assertThat(resp.code()).isEqualTo(400);
     assertThat(resp.message()).contains("Missing request parameter: q");
@@ -115,8 +111,8 @@ class GlobalExceptionHandlerTest {
   @DisplayName("MethodArgumentTypeMismatch (numeric) → 400")
   void handleTypeMismatch_number() {
     final var ex = new MethodArgumentTypeMismatchException(
-        "abc", Integer.class, "num", null, new IllegalArgumentException("not " +
-        "int"));
+        "abc", Integer.class, "num", null, new IllegalArgumentException("not "
+        + "int"));
     final var resp = handler.handleTypeMismatch(ex, req("/x"));
     assertThat(resp.code()).isEqualTo(400);
     assertThat(resp.message()).contains("type mismatch");
@@ -135,8 +131,8 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("HttpMessageNotReadable → InvalidFormatException (enum) → 400 " +
-      "(allowed values)")
+  @DisplayName("HttpMessageNotReadable → InvalidFormatException (enum) → 400 "
+      + "(allowed values)")
   void handleNotReadable_invalidFormat_enum() {
     final var cause = new InvalidFormatException(null, "msg", "INVALID",
         Level.class);
@@ -150,8 +146,8 @@ class GlobalExceptionHandlerTest {
   // ----------------- not readable (4-way split) -----------------
 
   @Test
-  @DisplayName("HttpMessageNotReadable → DateTimeParseException → 400 " +
-      "(invalid date format)")
+  @DisplayName("HttpMessageNotReadable → DateTimeParseException → 400 "
+      + "(invalid date format)")
   void handleNotReadable_dateTimeParse() {
     final var cause = new DateTimeParseException("bad date", "01-01-2024", 0);
     final var ex =
@@ -161,8 +157,8 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("HttpMessageNotReadable → MismatchedInputException (malformed " +
-      "structure) → 400")
+  @DisplayName("HttpMessageNotReadable → MismatchedInputException (malformed "
+      + "structure) → 400")
   void handleNotReadable_mismatchedInput() {
     final MismatchedInputException cause =
         MismatchedInputException.from(null, String.class, "malformed");
@@ -184,11 +180,11 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("DataIntegrityViolation → unique branch (constraint name " +
-      "match) → 409")
+  @DisplayName("DataIntegrityViolation → unique branch (constraint name "
+      + "match) → 409")
   void handleDataIntegrity_unique() {
-    final var root = new RuntimeException("violates constraint " +
-        "uq_res_client_src_code");
+    final var root = new RuntimeException("violates constraint "
+        + "uq_res_client_src_code");
     final var ex = new DataIntegrityViolationException("dup", root);
     final var resp = handler.handleDataIntegrity(ex, req("/x"));
     assertThat(resp.code()).isEqualTo(409);
@@ -207,8 +203,8 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
-  @DisplayName("DataIntegrityViolation → other branch (pass-through root " +
-      "message) → 409")
+  @DisplayName("DataIntegrityViolation → other branch (pass-through root "
+      + "message) → 409")
   void handleDataIntegrity_other() {
     final var root = new RuntimeException("some db error");
     final var ex = new DataIntegrityViolationException("db", root);
@@ -248,9 +244,10 @@ class GlobalExceptionHandlerTest {
     assertThat(resp.message()).isEqualTo("Internal Server Error");
   }
 
-  enum Level {LOW, MEDIUM, HIGH}
+  enum Level { LOW, MEDIUM, HIGH }
 
   static class Dummy {
+
     public void foo(final String id) {
     }
   }

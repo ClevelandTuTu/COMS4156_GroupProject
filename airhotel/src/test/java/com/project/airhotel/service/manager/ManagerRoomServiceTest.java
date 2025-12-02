@@ -1,24 +1,5 @@
 package com.project.airhotel.service.manager;
 
-import com.project.airhotel.common.exception.NotFoundException;
-import com.project.airhotel.room.dto.RoomUpdateRequest;
-import com.project.airhotel.room.dto.RoomsCreateRequest;
-import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.common.guard.EntityGuards;
-import com.project.airhotel.room.domain.Rooms;
-import com.project.airhotel.room.domain.enums.RoomStatus;
-import com.project.airhotel.room.repository.RoomsRepository;
-import com.project.airhotel.room.service.ManagerRoomService;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,9 +15,26 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.project.airhotel.common.exception.BadRequestException;
+import com.project.airhotel.common.exception.NotFoundException;
+import com.project.airhotel.common.guard.EntityGuards;
+import com.project.airhotel.room.domain.Rooms;
+import com.project.airhotel.room.domain.enums.RoomStatus;
+import com.project.airhotel.room.dto.RoomUpdateRequest;
+import com.project.airhotel.room.dto.RoomsCreateRequest;
+import com.project.airhotel.room.repository.RoomsRepository;
+import com.project.airhotel.room.service.ManagerRoomService;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 /**
- * Unit tests for ManagerRoomService. Each test indicates which method & branch
- * is exercised.
+ * Unit tests for ManagerRoomService. Each test indicates which method & branch is exercised.
  */
 @ExtendWith(MockitoExtension.class)
 class ManagerRoomServiceTest {
@@ -120,8 +118,8 @@ class ManagerRoomServiceTest {
   // ===================== createRoom =====================
 
   @Test
-  @DisplayName("createRoom → branch: room number already exists (throws " +
-      "BadRequestException)")
+  @DisplayName("createRoom → branch: room number already exists (throws "
+      + "BadRequestException)")
   void createRoom_roomNumberExists_throws() {
     final Long hotelId = 1L;
     final RoomsCreateRequest req = mock(RoomsCreateRequest.class);
@@ -141,8 +139,8 @@ class ManagerRoomServiceTest {
 
 
   @Test
-  @DisplayName("createRoom → branch: happy path with default status (req" +
-      ".status == null)")
+  @DisplayName("createRoom → branch: happy path with default status (req"
+      + ".status == null)")
   void createRoom_happyPath_defaultStatus() {
     final Long hotelId = 1L;
     final RoomsCreateRequest req = mock(RoomsCreateRequest.class);
@@ -176,8 +174,8 @@ class ManagerRoomServiceTest {
   }
 
   @Test
-  @DisplayName("createRoom → branch: happy path with explicit status (req" +
-      ".status != null)")
+  @DisplayName("createRoom → branch: happy path with explicit status (req"
+      + ".status != null)")
   void createRoom_happyPath_explicitStatus() {
     final Long hotelId = 1L;
     final RoomsCreateRequest req = mock(RoomsCreateRequest.class);
@@ -229,8 +227,8 @@ class ManagerRoomServiceTest {
   // ===================== updateRoom =====================
 
   @Test
-  @DisplayName("updateRoom → branch: change room type " +
-      "(ensureRoomTypeInHotelOrThrow then save)")
+  @DisplayName("updateRoom → branch: change room type "
+      + "(ensureRoomTypeInHotelOrThrow then save)")
   void updateRoom_changeRoomType() {
     final Long hotelId = 1L;
     final Long roomId = 100L;
@@ -275,8 +273,8 @@ class ManagerRoomServiceTest {
   }
 
   @Test
-  @DisplayName("updateRoom → branch: change room number to a different " +
-      "existing number (throws BadRequestException)")
+  @DisplayName("updateRoom → branch: change room number to a different "
+      + "existing number (throws BadRequestException)")
   void updateRoom_changeRoomNumber_toExisting_throws() {
     final Long hotelId = 1L;
     final Long roomId = 100L;
@@ -378,8 +376,8 @@ class ManagerRoomServiceTest {
   }
 
   @Test
-  @DisplayName("deleteRoom → edge: deletes by resolved entity id (may differ " +
-      "from param)")
+  @DisplayName("deleteRoom → edge: deletes by resolved entity id (may differ "
+      + "from param)")
   void deleteRoom_resolvedIdDiffers() {
     final Long hotelId = 1L;
     final Long paramRoomId = 999L;
@@ -396,8 +394,8 @@ class ManagerRoomServiceTest {
   }
 
   @Test
-  @DisplayName("deleteRoom → invalid: guard throws (room not found or not in " +
-      "hotel)")
+  @DisplayName("deleteRoom → invalid: guard throws (room not found or not in "
+      + "hotel)")
   void deleteRoom_guardThrows() {
     final Long hotelId = 1L;
     final Long roomId = 123L;

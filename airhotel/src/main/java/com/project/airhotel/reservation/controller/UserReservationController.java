@@ -5,10 +5,11 @@ import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.dto.PatchReservationRequest;
 import com.project.airhotel.reservation.dto.ReservationDetailResponse;
 import com.project.airhotel.reservation.dto.ReservationSummaryResponse;
-import com.project.airhotel.user.service.AuthUserService;
 import com.project.airhotel.reservation.service.UserReservationService;
+import com.project.airhotel.user.service.AuthUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -23,15 +24,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 /**
  * User-facing REST controller for reservation operations. Exposes endpoints to
  * list, create, view, update, and cancel reservations owned by the
  * authenticated user. User identification is resolved from the session first
  * and, if absent, from the OAuth2 principal which is then persisted into the
  * session.
- * <p>
  * Base path: /reservations
  */
 @RestController
@@ -67,7 +65,6 @@ public class UserReservationController {
    * Resolves the current user's id from the HTTP session if present; otherwise,
    * extracts email and name from the OAuth2 principal, finds or creates the
    * user, stores the resolved id in the session, and returns it.
-   * <p>
    * Resolution order:
    * 1) Read from session attribute SpringConfig.SESSION_USER_ID if available
    * 2) Fallback to OAuth2 principal (email and name) and persist id back to
@@ -101,7 +98,6 @@ public class UserReservationController {
 
   /**
    * Lists reservations owned by the current user.
-   * <p>
    * GET /reservations
    *
    * @param auth    Spring Security authentication
@@ -117,7 +113,6 @@ public class UserReservationController {
 
   /**
    * Creates a reservation for the current user.
-   * <p>
    * POST /reservations
    *
    * @param auth    Spring Security authentication
@@ -137,7 +132,6 @@ public class UserReservationController {
 
   /**
    * Retrieves a single reservation owned by the current user.
-   * <p>
    * GET /reservations/{id}
    *
    * @param auth    Spring Security authentication
@@ -154,7 +148,6 @@ public class UserReservationController {
 
   /**
    * Partially updates a reservation owned by the current user.
-   * <p>
    * PATCH /reservations/{id}
    *
    * @param auth    Spring Security authentication
@@ -175,7 +168,6 @@ public class UserReservationController {
   /**
    * Cancels a reservation owned by the current user. Returns 204 No Content on
    * success.
-   * <p>
    * DELETE /reservations/{id}
    *
    * @param auth    Spring Security authentication

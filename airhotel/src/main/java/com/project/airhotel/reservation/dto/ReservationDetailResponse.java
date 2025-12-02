@@ -3,12 +3,11 @@ package com.project.airhotel.reservation.dto;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 import com.project.airhotel.reservation.domain.enums.UpgradeStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import lombok.Data;
 
 /**
  * Detailed reservation response DTO. Represents a single reservation including
