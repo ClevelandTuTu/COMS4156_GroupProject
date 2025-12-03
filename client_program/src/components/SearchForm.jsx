@@ -12,7 +12,8 @@ function SearchForm({
   onSearch,
   loading,
   minCheckInDate,
-  minCheckOutDate
+  minCheckOutDate,
+  maxCheckOutDate
 }) {
   return (
     <section className="search-form">
@@ -33,6 +34,7 @@ function SearchForm({
           checkInDate={checkInDate}
           checkOutDate={checkOutDate}
           minCheckInDate={minCheckInDate}
+          maxCheckOutDate={maxCheckOutDate}
           onChange={(start, end) => {
             onCheckInChange(start);
             onCheckOutChange(end);
@@ -62,13 +64,15 @@ SearchForm.propTypes = {
   onSearch: PropTypes.func.isRequired,
   loading: PropTypes.bool,
   minCheckInDate: PropTypes.string,
-  minCheckOutDate: PropTypes.string
+  minCheckOutDate: PropTypes.string,
+  maxCheckOutDate: PropTypes.string
 };
 
 SearchForm.defaultProps = {
   loading: false,
   minCheckInDate: undefined,
-  minCheckOutDate: undefined
+  minCheckOutDate: undefined,
+  maxCheckOutDate: undefined
 };
 
 export default SearchForm;

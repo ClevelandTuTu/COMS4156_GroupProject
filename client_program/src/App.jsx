@@ -40,6 +40,9 @@ function App() {
   const [showRoomTypeModal, setShowRoomTypeModal] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [hasSession, setHasSession] = useState(false);
+  const [activeCity, setActiveCity] = useState('');
+  const [activeCheckIn, setActiveCheckIn] = useState('');
+  const [activeCheckOut, setActiveCheckOut] = useState('');
   const isModalOpen = showEditModal || showCancelModal || showRoomTypeModal;
 
   const today = new Date();
@@ -47,6 +50,13 @@ function App() {
     today.getFullYear(),
     today.getMonth(),
     today.getDate() + 1
+  )
+    .toISOString()
+    .split('T')[0];
+  const oneYearLaterIso = new Date(
+    today.getFullYear() + 1,
+    today.getMonth(),
+    today.getDate()
   )
     .toISOString()
     .split('T')[0];
@@ -146,8 +156,7 @@ function App() {
 
   const fetchHotels = async () => {
     if (!hasSession) {
-      setError('');
-      setHasFetched(false);
+      addToast('Please sign in to search hotels.', 'error');
       return;
     }
     if (!searchCity.trim()) {
@@ -183,6 +192,9 @@ function App() {
       const data = await response.json();
       persistSessionFromPayload(data);
       setHasSession(true);
+      setActiveCity(searchCity.trim());
+      setActiveCheckIn(checkInDate);
+      setActiveCheckOut(checkOutDate);
       setHotels(Array.isArray(data) ? data : []);
       setHasFetched(true);
     } catch (err) {
@@ -243,15 +255,17 @@ function App() {
   }, [activeView, reservationsFetched, reservationsLoading]);
 
   const filteredHotels = useMemo(() => {
-    if (!searchCity.trim()) {
+    const cityFilter =
+      searchCity.trim() === activeCity.trim() ? activeCity.trim() : '';
+    if (!cityFilter) {
       return hotels;
     }
     return hotels.filter((hotel) =>
       `${hotel.city ?? ''} ${hotel.name ?? ''}`
         .toLowerCase()
-        .includes(searchCity.trim().toLowerCase())
+        .includes(cityFilter.toLowerCase())
     );
-  }, [hotels, searchCity]);
+  }, [hotels, searchCity, activeCity]);
 
   const groupedReservations = useMemo(() => {
     const toTime = (value, fallback = Number.MAX_SAFE_INTEGER) => {
@@ -540,11 +554,6 @@ function App() {
       <main>
         {activeView === 'search' && (
           <>
-            {!hasSession && (
-              <div className="alert alert-empty">
-                Please sign in to search and view hotels.
-              </div>
-            )}
             <SearchForm
               searchCity={searchCity}
               onSearchCityChange={setSearchCity}
@@ -558,12 +567,19 @@ function App() {
               minCheckOutDate={
                 checkInDate ? addDays(checkInDate, 1) : undefined
               }
+              maxCheckOutDate={oneYearLaterIso}
             />
 
-            {hasSession && error && (
+            {error && (
               <div className="alert alert-error">{error}</div>
             )}
-            {!error && !loading && hasFetched && filteredHotels.length === 0 && (
+            {!error &&
+              !loading &&
+              hasFetched &&
+              searchCity.trim() === activeCity.trim() &&
+              checkInDate === activeCheckIn &&
+              checkOutDate === activeCheckOut &&
+              filteredHotels.length === 0 && (
               <div className="alert alert-empty">
                 No hotels matched{' '}
                 {searchCity ? `"${searchCity}"` : 'your filters'}. Try another
@@ -572,11 +588,8 @@ function App() {
             )}
 
             <section className="results">
-              {hasSession && loading && (
-                <div className="loading">Loading hotel data...</div>
-              )}
-              {hasSession &&
-                !loading &&
+              {loading && <div className="loading">Loading hotel data...</div>}
+              {!loading &&
                 filteredHotels.map((hotel) => (
                   <HotelCard
                     key={hotel.id}
@@ -593,20 +606,17 @@ function App() {
             {reservationsError && (
               <div className="alert alert-error">{reservationsError}</div>
             )}
-            {hasSession && reservationsLoading && (
+            {reservationsLoading && (
               <div className="loading">Loading reservations...</div>
             )}
-            {!hasSession && (
+            {!reservationsLoading && reservations.length === 0 && (
               <div className="alert alert-empty">
-                Please sign in to view reservations.
+                {hasSession
+                  ? 'You have no reservations yet.'
+                  : 'You have to sign in to view your reservations.'}
               </div>
             )}
-            {hasSession && !reservationsLoading && reservations.length === 0 && (
-              <div className="alert alert-empty">
-                You have no reservations yet.
-              </div>
-            )}
-            {hasSession && !reservationsLoading && reservations.length > 0 && (
+            {!reservationsLoading && reservations.length > 0 && (
               <>
                 {groupedReservations.upcoming.length > 0 && (
                   <>
