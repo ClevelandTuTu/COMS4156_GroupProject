@@ -1,21 +1,20 @@
 package com.project.airhotel.hotel.service;
 
 import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.room.domain.RoomTypeInventory;
 import com.project.airhotel.room.domain.RoomTypes;
-import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
 import com.project.airhotel.room.repository.RoomTypesRepository;
 import com.project.airhotel.room.repository.RoomsRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Service layer handling hotel-related operations such as retrieving
@@ -137,4 +136,106 @@ public final class HotelService {
 
     return result;
   }
+
+  /**
+   * Performs a fuzzy search for hotels based on city name prefix.
+   *
+   * <p>This method returns hotels whose city names <b>start with</b> the
+   * provided keyword (case-insensitive). For example, keyword "new"
+   * will match "New York", "New Haven", "New Orleans", but will not
+   * match "Renew Hotel".
+   *
+   * @param cityKeyword a partial city name prefix, e.g. "new"
+   * @return a list of hotels whose city starts with the keyword
+   * @throws ResponseStatusException if the search keyword is empty
+   */
+  public List<Hotels> searchHotelsByCityFuzzy(final String cityKeyword) {
+    if (cityKeyword == null || cityKeyword.isBlank()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "City keyword must not be empty");
+    }
+    return hotelsRepository.searchCityByPrefix(cityKeyword.trim());
+  }
+
+  /**
+   * Performs a fuzzy city search and filters hotels by availability
+   * in the given stay date range.
+   *
+   * <p>The date range is interpreted as [startDate, endDate), where
+   * startDate is inclusive and endDate is exclusive.</p>
+   *
+   * @param keyword   fuzzy city keyword such as "new"
+   * @param startDate inclusive check-in date
+   * @param endDate   exclusive check-out date
+   * @return hotels that match the city keyword and have at least one
+   *         available room type on every date in the range
+   * @throws ResponseStatusException if keyword is blank or dates are invalid
+   */
+  public List<Hotels> searchAvailableHotelsByCityAndDates(
+      final String keyword,
+      final LocalDate startDate,
+      final LocalDate endDate) {
+
+    if (keyword == null || keyword.isBlank()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "City keyword must not be empty"
+      );
+    }
+
+    if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Invalid start/end date"
+      );
+    }
+
+    List<Hotels> candidates =
+        hotelsRepository.searchCityByPrefix(keyword.trim());
+
+    return candidates.stream()
+        .filter(hotel ->
+            isHotelAvailableInRange(
+                hotel.getId(),
+                startDate,
+                endDate))
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Checks whether a given hotel has at least one available room
+   * for every date in the given range [startDate, endDate).
+   *
+   * @param hotelId   hotel id to check
+   * @param startDate inclusive start date
+   * @param endDate   exclusive end date
+   * @return {@code true} if the hotel is available on every day,
+   *         {@code false} otherwise
+   */
+  private boolean isHotelAvailableInRange(
+      final Long hotelId,
+      final LocalDate startDate,
+      final LocalDate endDate) {
+
+    LocalDate d = startDate;
+
+    while (!d.isAfter(endDate.minusDays(1))) {
+
+      var inventories =
+          roomTypeInventoryRepository.findByHotelIdAndStayDate(hotelId, d);
+
+      boolean hasAvailable =
+          inventories.stream().anyMatch(i -> i.getAvailable() > 0);
+
+      if (!hasAvailable) {
+        return false;
+      }
+
+      d = d.plusDays(1);
+    }
+
+    return true;
+  }
+
 }
