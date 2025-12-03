@@ -1,4 +1,4 @@
-package com.project.airhotel.service.core;
+package com.project.airhotel.reservation.service;
 
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CANCELED;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_OUT;
@@ -28,11 +28,6 @@ import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.policy.ReservationChangePolicy;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
-import com.project.airhotel.reservation.service.ReservationInventoryService;
-import com.project.airhotel.reservation.service.ReservationNightsService;
-import com.project.airhotel.reservation.service.ReservationOrchestrator;
-import com.project.airhotel.reservation.service.ReservationPricingService;
-import com.project.airhotel.reservation.service.ReservationStatusService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -416,7 +411,8 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("modifyReservation → type change with existing roomId re-validates room against new type")
+  @DisplayName("modifyReservation → type change with existing roomId re-validates "
+      + "room against new type")
   void modifyReservation_typeChangeWithExistingRoom() {
     final Reservations r = baseReservation(PENDING);
     r.setRoomId(555L);
@@ -449,7 +445,8 @@ class ReservationOrchestratorTest {
   }
 
   @Test
-  @DisplayName("createReservation → uses provided currency when non-null and ignores initial positive priceTotal")
+  @DisplayName("createReservation → uses provided currency when non-null and ignores initial "
+      + "positive priceTotal")
   void createReservation_customCurrency_andPositiveInitialPrice() {
     final Long userId = 9L;
     final LocalDate in = LocalDate.of(2025, 10, 20);

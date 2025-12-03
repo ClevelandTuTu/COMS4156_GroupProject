@@ -1,4 +1,4 @@
-package com.project.airhotel.service.manager;
+package com.project.airhotel.reservation.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;

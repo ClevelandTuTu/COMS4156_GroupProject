@@ -1,4 +1,4 @@
-package com.project.airhotel.service;
+package com.project.airhotel.reservation.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 
 import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.reservation.domain.Reservations;
-import com.project.airhotel.reservation.service.ReservationPricingService;
 import com.project.airhotel.room.domain.RoomTypeDailyPrice;
 import com.project.airhotel.room.domain.RoomTypes;
 import com.project.airhotel.room.repository.RoomTypeDailyPriceRepository;
