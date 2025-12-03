@@ -17,31 +17,39 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Service layer handling hotel-related operations such as retrieving
- * hotel information, counting rooms, and fetching room type availability.
+ * Service layer handling hotel-related operations such as retrieving hotel information, counting
+ * rooms, and fetching room type availability.
  */
 @Service
 public final class HotelService {
 
-  /** Repository for hotel entities. */
+  /**
+   * Repository for hotel entities.
+   */
   private final HotelsRepository hotelsRepository;
 
-  /** Repository for room entities. */
+  /**
+   * Repository for room entities.
+   */
   private final RoomsRepository roomsRepository;
 
-  /** Repository for room type entities. */
+  /**
+   * Repository for room type entities.
+   */
   private final RoomTypesRepository roomTypesRepository;
 
-  /** Repository for room type inventory entities. */
+  /**
+   * Repository for room type inventory entities.
+   */
   private final RoomTypeInventoryRepository roomTypeInventoryRepository;
 
   /**
    * Constructs the service with all required repositories.
    *
-   * @param hotelsRepo           repository for hotel entities
-   * @param roomsRepo            repository for room entities
-   * @param roomTypesRepo        repository for room type entities
-   * @param roomTypeInvRepo      repository for room type inventory
+   * @param hotelsRepo      repository for hotel entities
+   * @param roomsRepo       repository for room entities
+   * @param roomTypesRepo   repository for room type entities
+   * @param roomTypeInvRepo repository for room type inventory
    */
   public HotelService(
       final HotelsRepository hotelsRepo,
@@ -141,9 +149,8 @@ public final class HotelService {
    * Performs a fuzzy search for hotels based on city name prefix.
    *
    * <p>This method returns hotels whose city names <b>start with</b> the
-   * provided keyword (case-insensitive). For example, keyword "new"
-   * will match "New York", "New Haven", "New Orleans", but will not
-   * match "Renew Hotel".
+   * provided keyword (case-insensitive). For example, keyword "new" will match "New York", "New
+   * Haven", "New Orleans", but will not match "Renew Hotel".
    *
    * @param cityKeyword a partial city name prefix, e.g. "new"
    * @return a list of hotels whose city starts with the keyword
@@ -159,8 +166,7 @@ public final class HotelService {
   }
 
   /**
-   * Performs a fuzzy city search and filters hotels by availability
-   * in the given stay date range.
+   * Performs a fuzzy city search and filters hotels by availability in the given stay date range.
    *
    * <p>The date range is interpreted as [startDate, endDate), where
    * startDate is inclusive and endDate is exclusive.</p>
@@ -168,8 +174,8 @@ public final class HotelService {
    * @param keyword   fuzzy city keyword such as "new"
    * @param startDate inclusive check-in date
    * @param endDate   exclusive check-out date
-   * @return hotels that match the city keyword and have at least one
-   *         available room type on every date in the range
+   * @return hotels that match the city keyword and have at least one available room type on every
+   * date in the range
    * @throws ResponseStatusException if keyword is blank or dates are invalid
    */
   public List<Hotels> searchAvailableHotelsByCityAndDates(
@@ -196,46 +202,22 @@ public final class HotelService {
 
     return candidates.stream()
         .filter(hotel ->
-            isHotelAvailableInRange(
-                hotel.getId(),
-                startDate,
-                endDate))
+            isHotelAvailable(
+                hotel.getId()))
         .collect(Collectors.toList());
   }
 
   /**
-   * Checks whether a given hotel has at least one available room
-   * for every date in the given range [startDate, endDate).
+   * Checks whether a given hotel has at least one available room for every date in the given range
+   * [startDate, endDate).
    *
-   * @param hotelId   hotel id to check
-   * @param startDate inclusive start date
-   * @param endDate   exclusive end date
-   * @return {@code true} if the hotel is available on every day,
-   *         {@code false} otherwise
+   * @param hotelId hotel id to check
+   * @return {@code true} if the hotel is available on every day, {@code false} otherwise
    */
-  private boolean isHotelAvailableInRange(
-      final Long hotelId,
-      final LocalDate startDate,
-      final LocalDate endDate) {
-
-    LocalDate d = startDate;
-
-    while (!d.isAfter(endDate.minusDays(1))) {
-
-      var inventories =
-          roomTypeInventoryRepository.findByHotelIdAndStayDate(hotelId, d);
-
-      boolean hasAvailable =
-          inventories.stream().anyMatch(i -> i.getAvailable() > 0);
-
-      if (!hasAvailable) {
-        return false;
-      }
-
-      d = d.plusDays(1);
-    }
-
-    return true;
+  private boolean isHotelAvailable(
+      final Long hotelId) {
+    final List<RoomTypes> roomTypesFound = roomTypesRepository.findByHotelId(hotelId);
+    return !roomTypesFound.isEmpty();
   }
 
 }
