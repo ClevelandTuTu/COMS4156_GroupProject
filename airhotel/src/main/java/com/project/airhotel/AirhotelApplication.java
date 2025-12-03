@@ -2,8 +2,7 @@ package com.project.airhotel;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.security.config.annotation.web.configuration
-    .EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 /**
  * Application entry point for AirHotel. Bootstraps the Spring Boot application

@@ -14,7 +14,6 @@ public class RouteController {
 
   /**
    * Public welcome endpoint.
-   * <p>
    * GET / or /index
    *
    * @return a plain text welcome message

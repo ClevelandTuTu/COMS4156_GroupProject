@@ -112,15 +112,19 @@ class UserReservationServiceTest {
     when(reservationsRepository.findByUserId(userId)).thenReturn(List.of(r1, r2));
 
     final Hotels h1 = new Hotels();
-    h1.setId(101L); h1.setName("H1");
+    h1.setId(101L);
+    h1.setName("H1");
     final Hotels h2 = new Hotels();
-    h2.setId(102L); h2.setName("H2");
+    h2.setId(102L);
+    h2.setName("H2");
     when(hotelsRepository.findAllById(Mockito.any())).thenReturn(List.of(h1, h2));
 
     final RoomTypes rt1 = new RoomTypes();
-    rt1.setId(201L); rt1.setName("RT1");
+    rt1.setId(201L);
+    rt1.setName("RT1");
     final RoomTypes rt2 = new RoomTypes();
-    rt2.setId(202L); rt2.setName("RT2");
+    rt2.setId(202L);
+    rt2.setName("RT2");
     when(roomTypesRepository.findAllById(Mockito.any())).thenReturn(List.of(rt1, rt2));
 
     final ReservationSummaryResponse s1 = mock(ReservationSummaryResponse.class);

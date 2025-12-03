@@ -30,14 +30,11 @@ public class AuthUserService {
    * Finds a user by the given email. If no user exists, a new record is created
    * using the provided email and name. If a user exists and the provided name
    * is non-null and different from the stored one, the name is updated.
-   * <p>
    * Transactional semantics: the read-modify-write cycle executes within a
    * single transaction. It is expected that the underlying Users table enforces
    * a unique constraint on email.
-   * <p>
    * Preconditions:
    * - email must be non-null and non-blank
-   * <p>
    * Side effects:
    * - May insert a new Users row if email does not exist
    * - May update the name field of an existing user if a different non-null
