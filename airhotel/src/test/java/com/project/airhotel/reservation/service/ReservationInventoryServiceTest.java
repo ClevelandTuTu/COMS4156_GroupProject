@@ -1,4 +1,4 @@
-package com.project.airhotel.service.core;
+package com.project.airhotel.reservation.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.project.airhotel.common.exception.BadRequestException;
-import com.project.airhotel.reservation.service.ReservationInventoryService;
 import com.project.airhotel.room.domain.RoomTypeInventory;
 import com.project.airhotel.room.domain.RoomTypes;
 import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
@@ -315,7 +314,8 @@ class ReservationInventoryServiceTest {
   }
 
   @Test
-  @DisplayName("applyRangeChangeOrThrow → same room type and identical days: net zero, no inventory writes")
+  @DisplayName("applyRangeChangeOrThrow → same room type and identical days: net zero, "
+      + "no inventory writes")
   void apply_sameTypeAndDates_noNetChange() {
     final LocalDate in = LocalDate.now();
     final LocalDate out = in.plusDays(2); // [in, in+1]

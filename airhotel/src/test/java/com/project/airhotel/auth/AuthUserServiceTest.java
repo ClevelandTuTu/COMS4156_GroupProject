@@ -1,4 +1,4 @@
-package com.project.airhotel.service.auth;
+package com.project.airhotel.auth;
 
 import com.project.airhotel.user.domain.Users;
 import com.project.airhotel.user.repository.UsersRepository;

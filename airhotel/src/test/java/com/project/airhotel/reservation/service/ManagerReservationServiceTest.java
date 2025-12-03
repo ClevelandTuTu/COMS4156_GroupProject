@@ -1,4 +1,4 @@
-package com.project.airhotel.service.manager;
+package com.project.airhotel.reservation.service;
 
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CANCELED;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_IN;
@@ -31,9 +31,6 @@ import com.project.airhotel.reservation.domain.enums.UpgradeStatus;
 import com.project.airhotel.reservation.dto.ApplyUpgradeRequest;
 import com.project.airhotel.reservation.dto.ReservationUpdateRequest;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
-import com.project.airhotel.reservation.service.ManagerReservationService;
-import com.project.airhotel.reservation.service.ReservationOrchestrator;
-import com.project.airhotel.reservation.service.ReservationStatusService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
