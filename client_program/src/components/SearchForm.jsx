@@ -46,7 +46,7 @@ function SearchForm({
         onClick={onSearch}
         disabled={loading}
       >
-        {loading ? 'Loading...' : 'Show All Hotels'}
+        {loading ? 'Loading...' : 'Search Hotels'}
       </button>
     </section>
   );

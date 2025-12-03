@@ -150,10 +150,24 @@ function App() {
       setHasFetched(false);
       return;
     }
+    if (!searchCity.trim()) {
+      addToast('Please enter a destination.', 'error');
+      return;
+    }
+    if (!checkInDate || !checkOutDate) {
+      addToast('Please select check-in and check-out dates.', 'error');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      const hotelsUrl = buildApiUrl('/hotels');
+      const params = new URLSearchParams();
+      if (searchCity) {
+        params.append('city', searchCity);
+      }
+      params.append('startDate', checkInDate);
+      params.append('endDate', checkOutDate);
+      const hotelsUrl = buildApiUrl(`/hotels/search/available?${params.toString()}`);
       const response = await fetch(hotelsUrl, {
         headers: {
           'Content-Type': 'application/json'
