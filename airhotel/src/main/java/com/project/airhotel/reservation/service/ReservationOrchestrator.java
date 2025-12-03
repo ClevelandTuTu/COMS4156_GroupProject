@@ -8,6 +8,7 @@ import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 import com.project.airhotel.reservation.dto.CreateReservationRequest;
 import com.project.airhotel.reservation.policy.ReservationChangePolicy;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -106,6 +107,10 @@ public class ReservationOrchestrator {
       if (effIn == null || effOut == null || !effOut.isAfter(effIn)) {
         throw new BadRequestException("Invalid stay date range.");
       }
+      final LocalDate maxCheckOut = LocalDate.now().plusYears(1);
+      if (effOut.isAfter(maxCheckOut)) {
+        throw new BadRequestException("checkOut must be within one year from today.");
+      }
       r.setRoomTypeId(effTypeId);
       nightsService.recalcNightsOrThrow(r, effIn, effOut);
       pricingService.recalcTotalPriceOrThrow(r);
@@ -172,6 +177,10 @@ public class ReservationOrchestrator {
     }
     if (req.getPriceTotal() != null && req.getPriceTotal().signum() < 0) {
       throw new BadRequestException("priceTotal must be non-negative.");
+    }
+    final LocalDate maxCheckOut = LocalDate.now().plusYears(1);
+    if (req.getCheckOutDate() != null && req.getCheckOutDate().isAfter(maxCheckOut)) {
+      throw new BadRequestException("checkOut must be within one year from today.");
     }
 
     // Build the entity and calculate the number of nights
