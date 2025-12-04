@@ -4,7 +4,6 @@ import com.project.airhotel.user.service.AuthUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -17,6 +16,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * Production-like security configuration active when the {@code dev} profile is not enabled. This
+ * configuration: - Requires authentication for all endpoints except a small allowlist such as the
+ * home page, login endpoints, OAuth2 callbacks and error page. - Keeps CSRF enabled by default, but
+ * ignores CSRF checks for specific JSON API endpoints under {@code /manager/**} and
+ * {@code /reservations/**}. - Configures OAuth2 login with a custom success handler that persists
+ * the internal user id in the HTTP session for downstream use.
+ */
 @Configuration
 @Profile("!dev")
 public class SpringConfig {
@@ -29,6 +36,13 @@ public class SpringConfig {
     this.authUserService = authUserServ;
   }
 
+  /**
+   * Builds the primary {@link SecurityFilterChain} for non-development profiles.
+   *
+   * @param http the {@link HttpSecurity} builder to configure
+   * @return a configured {@link SecurityFilterChain}
+   * @throws Exception if Spring Security configuration fails
+   */
   @Bean
   public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
 
@@ -56,7 +70,8 @@ public class SpringConfig {
         )
         .logout(logout -> logout
             .logoutRequestMatcher(
-                new org.springframework.security.web.util.matcher.RegexRequestMatcher("^/logout$", "GET")
+                new org.springframework.security.web.util.matcher.RegexRequestMatcher("^/logout$",
+                    "GET")
             )
             .invalidateHttpSession(true)
             .clearAuthentication(true)
@@ -70,7 +85,23 @@ public class SpringConfig {
         .build();
   }
 
-  // 3️⃣ CORS setup: allow your React app to talk to the backend with cookies
+  /**
+   * Creates and configures the {@link CorsConfigurationSource} used by Spring Security
+   * to apply CORS rules across the application.
+   *
+   * <p>This configuration:
+   * <ul>
+   *   <li>Allows requests coming from the React frontend at {@code http://localhost:5173}.</li>
+   *   <li>Permits standard HTTP methods such as GET, POST, PATCH, DELETE, and OPTIONS.</li>
+   *   <li>Allows specific headers including {@code Content-Type}, {@code Authorization},
+   *       and {@code X-CSRF-TOKEN}.</li>
+   *   <li>Enables credentialed requests, ensuring cookies (such as JSESSIONID) are included.</li>
+   *   <li>Sets a max age for CORS preflight responses to reduce preflight traffic.</li>
+   * </ul>
+   *
+   * @return a fully configured {@link CorsConfigurationSource} that applies the above CORS rules
+   *         to all application endpoints.
+   */
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
