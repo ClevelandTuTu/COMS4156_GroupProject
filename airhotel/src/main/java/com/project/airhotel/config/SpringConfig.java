@@ -3,6 +3,7 @@ package com.project.airhotel.config;
 import com.project.airhotel.user.service.AuthUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -11,6 +12,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Production-like security configuration active when the {@code dev} profile is not enabled. This
@@ -24,22 +28,10 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @Profile("!dev")
 public class SpringConfig {
 
-  /**
-   * Session attribute key used to store the authenticated internal user id.
-   */
   public static final String SESSION_USER_ID = "USER_ID";
 
-  /**
-   * Service used to get user's email.
-   */
   private final AuthUserService authUserService;
 
-  /**
-   * Creates the security configuration with dependencies.
-   *
-   * @param authUserServ service used to resolve or create a local user record from the OAuth2
-   *                     principal
-   */
   public SpringConfig(final AuthUserService authUserServ) {
     this.authUserService = authUserServ;
   }
@@ -52,10 +44,8 @@ public class SpringConfig {
    * @throws Exception if Spring Security configuration fails
    */
   @Bean
-  public SecurityFilterChain securityFilterChain(
-      final HttpSecurity http) throws Exception {
+  public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
 
-    // ignore CSRF check for /manager/** and /reservations/**
     final RequestMatcher ignoreCsrf = (final HttpServletRequest r) -> {
       final String path = r.getRequestURI();
       return path.startsWith("/manager/")
@@ -64,25 +54,20 @@ public class SpringConfig {
     };
 
     return http
-        .csrf(csrf -> csrf.ignoringRequestMatchers(
-            ignoreCsrf))
+        // 1️⃣ Enable CORS so preflight & credentials work
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        // 2️⃣ Keep your existing CSRF ignore
+        .csrf(csrf -> csrf.ignoringRequestMatchers(ignoreCsrf))
         .authorizeHttpRequests(auth -> auth
-            // Explicitly release the endpoint used for OAuth2 login to avoid
-            // error after login
             .requestMatchers("/", "/index", "/logout-success",
                 "/oauth2/**", "/login/oauth2/**",
-                "/api/auth/**", "/error").permitAll()
+                "/api/auth/**", "/error")
+            .permitAll()
             .anyRequest().authenticated()
         )
-        // Automatically creates the Google Login URLS
-        // Google OAuth credentials in application.properties
-        // redirect to Google's Auth Server /oauth2/authorization/google
-        // Google's callback URL is /login/oauth2/code/google
-        // Spring ignores the redirect URL that's set on Google Cloud
         .oauth2Login(oauth2 -> oauth2
             .successHandler(this::oauthSuccessHandler)
         )
-
         .logout(logout -> logout
             .logoutRequestMatcher(
                 new org.springframework.security.web.util.matcher.RegexRequestMatcher("^/logout$",
@@ -97,8 +82,38 @@ public class SpringConfig {
               res.getWriter().write("{\"message\": \"Logged out successfully\"}");
             })
         )
-
         .build();
+  }
+
+  /**
+   * Creates and configures the {@link CorsConfigurationSource} used by Spring Security
+   * to apply CORS rules across the application.
+   *
+   * <p>This configuration:
+   * <ul>
+   *   <li>Allows requests coming from the React frontend at {@code http://localhost:5173}.</li>
+   *   <li>Permits standard HTTP methods such as GET, POST, PATCH, DELETE, and OPTIONS.</li>
+   *   <li>Allows specific headers including {@code Content-Type}, {@code Authorization},
+   *       and {@code X-CSRF-TOKEN}.</li>
+   *   <li>Enables credentialed requests, ensuring cookies (such as JSESSIONID) are included.</li>
+   *   <li>Sets a max age for CORS preflight responses to reduce preflight traffic.</li>
+   * </ul>
+   *
+   * @return a fully configured {@link CorsConfigurationSource} that applies the above CORS rules
+   *         to all application endpoints.
+   */
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowedOrigins(List.of("http://localhost:5173"));
+    config.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
+    config.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-CSRF-TOKEN"));
+    config.setAllowCredentials(true); // critical for cookies
+    config.setMaxAge(3600L);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
   }
 
   private void oauthSuccessHandler(
@@ -111,18 +126,12 @@ public class SpringConfig {
     String email = principal.getAttribute("email");
     String name = principal.getAttribute("name");
 
-    // create/find local user
     Long userId = authUserService.findOrCreateByEmail(email, name);
 
-    // ensure session exists and store user id
     var session = req.getSession(true);
     session.setAttribute(SESSION_USER_ID, userId);
 
     String redirectUrl = "http://localhost:5173/";
     res.sendRedirect(redirectUrl);
-  }
-
-  private String escape(final String s) {
-    return s == null ? "" : s.replace("\"", "\\\"");
   }
 }

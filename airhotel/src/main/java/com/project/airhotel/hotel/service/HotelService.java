@@ -168,14 +168,14 @@ public final class HotelService {
   /**
    * Performs a fuzzy city search and filters hotels by availability in the given stay date range.
    *
-   * <p>The date range is interpreted as [startDate, endDate), where
-   * startDate is inclusive and endDate is exclusive.</p>
+   * <p>The date range is interpreted as [startDate, endDate), where startDate is inclusive and
+   * endDate is exclusive.</p>
    *
-   * @param keyword   fuzzy city keyword such as "new"
+   * @param keyword fuzzy city keyword such as "new"
    * @param startDate inclusive check-in date
-   * @param endDate   exclusive check-out date
+   * @param endDate exclusive check-out date
    * @return hotels that match the city keyword and have at least one available room type on every
-   * date in the range
+   *     date in the range
    * @throws ResponseStatusException if keyword is blank or dates are invalid
    */
   public List<Hotels> searchAvailableHotelsByCityAndDates(
