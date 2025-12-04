@@ -14,6 +14,7 @@ function DateRangePicker({
   checkInDate,
   checkOutDate,
   minCheckInDate,
+  maxCheckOutDate,
   onChange
 }) {
   const [open, setOpen] = useState(false);
@@ -24,13 +25,21 @@ function DateRangePicker({
     [minCheckInDate]
   );
 
+  const maxEnd = useMemo(
+    () => (maxCheckOutDate ? toDate(maxCheckOutDate) : null),
+    [maxCheckOutDate]
+  );
+
   const selectionRange = useMemo(() => {
     const start = toDate(checkInDate) ?? minStart;
     const endCandidate = toDate(checkOutDate);
-    const end =
+    let end =
       endCandidate && isAfter(endCandidate, start)
         ? endCandidate
         : addDays(start, 1);
+    if (maxEnd && isAfter(end, maxEnd)) {
+      end = maxEnd;
+    }
     return [
       {
         startDate: start,
@@ -38,7 +47,7 @@ function DateRangePicker({
         key: 'selection'
       }
     ];
-  }, [checkInDate, checkOutDate, minStart]);
+  }, [checkInDate, checkOutDate, minStart, maxEnd]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -56,12 +65,16 @@ function DateRangePicker({
 
   const handleSelect = (ranges) => {
     const { startDate, endDate } = ranges.selection;
+    if (maxEnd && isAfter(endDate, maxEnd)) {
+      onChange(toIso(startDate), maxCheckOutDate);
+      return;
+    }
     onChange(toIso(startDate), toIso(endDate));
   };
 
   const summary =
     checkInDate && checkOutDate
-      ? `${checkInDate} → ${checkOutDate}`
+      ? `${checkInDate} to ${checkOutDate}`
       : 'Select dates';
 
   return (
@@ -81,6 +94,7 @@ function DateRangePicker({
           <DateRange
             ranges={selectionRange}
             minDate={minStart}
+            maxDate={maxEnd ?? undefined}
             onChange={handleSelect}
             moveRangeOnFirstSelection={false}
             showDateDisplay={false}
@@ -102,6 +116,7 @@ DateRangePicker.propTypes = {
   checkInDate: PropTypes.string,
   checkOutDate: PropTypes.string,
   minCheckInDate: PropTypes.string,
+  maxCheckOutDate: PropTypes.string,
   onChange: PropTypes.func.isRequired
 };
 
@@ -109,7 +124,8 @@ DateRangePicker.defaultProps = {
   label: 'Dates',
   checkInDate: '',
   checkOutDate: '',
-  minCheckInDate: ''
+  minCheckInDate: '',
+  maxCheckOutDate: ''
 };
 
 export default DateRangePicker;

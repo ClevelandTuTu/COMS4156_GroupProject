@@ -1,15 +1,17 @@
 package com.project.airhotel.hotel.controller;
 
 import com.project.airhotel.hotel.service.HotelService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller exposing read-only hotel APIs.
@@ -87,4 +89,49 @@ public final class HotelController {
       @PathVariable final Long id) {
     return hotelService.getRoomTypeAvailability(id);
   }
+
+
+  /**
+   * Performs a fuzzy search for hotels by city name. This endpoint returns
+   * hotels whose city names contain the provided keyword, ignoring case.
+   *
+   * <p>Example: {@code GET /hotels/search?city=new}</p>
+   *
+   * @param city the partial or full city name keyword
+   * @return list of hotels whose city contains the keyword
+   */
+  @GetMapping("/search")
+  public List<?> searchHotelsByCity(@RequestParam("city") final String city) {
+    return hotelService.searchHotelsByCityFuzzy(city);
+  }
+
+  /**
+   * Searches for hotels by fuzzy city name and filters them by availability
+   * within the given stay date range.
+   *
+   * <p>Example:
+   *   GET /hotels/search/available?city=new
+   *   &startDate=2025-01-10&endDate=2025-01-11,
+   *   2025-01-13, 2025-01-14.
+   *
+   * @param city      partial or full city name keyword
+   * @param startDate inclusive check-in date (ISO yyyy-MM-dd)
+   * @param endDate   exclusive check-out date (ISO yyyy-MM-dd)
+   * @return list of hotels that match the city keyword and are available
+   *         for each date in [startDate, endDate)
+   */
+  @GetMapping("/search/available")
+  public List<?> searchAvailableHotels(
+      @RequestParam("city") final String city,
+      @RequestParam("startDate")
+      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+      final LocalDate startDate,
+      @RequestParam("endDate")
+      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+      final LocalDate endDate) {
+
+    return hotelService.searchAvailableHotelsByCityAndDates(
+        city, startDate, endDate);
+  }
+
 }

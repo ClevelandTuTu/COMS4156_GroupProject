@@ -1,4 +1,4 @@
-package com.project.airhotel.service.core;
+package com.project.airhotel.reservation.service;
 
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CHECKED_IN;
 import static com.project.airhotel.reservation.domain.enums.ReservationStatus.CONFIRMED;
@@ -22,8 +22,6 @@ import com.project.airhotel.reservation.domain.ReservationsStatusHistory;
 import com.project.airhotel.reservation.domain.enums.ReservationStatus;
 import com.project.airhotel.reservation.repository.ReservationsRepository;
 import com.project.airhotel.reservation.repository.ReservationsStatusHistoryRepository;
-import com.project.airhotel.reservation.service.ReservationStatusMachine;
-import com.project.airhotel.reservation.service.ReservationStatusService;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

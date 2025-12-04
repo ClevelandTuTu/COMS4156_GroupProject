@@ -1,25 +1,30 @@
-package com.project.airhotel.publicApi;
+package com.project.airhotel.hotel.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.project.airhotel.hotel.domain.Hotels;
+import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.room.domain.RoomTypeInventory;
 import com.project.airhotel.room.domain.RoomTypes;
-import com.project.airhotel.hotel.repository.HotelsRepository;
 import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
 import com.project.airhotel.room.repository.RoomTypesRepository;
 import com.project.airhotel.room.repository.RoomsRepository;
-import com.project.airhotel.hotel.service.HotelService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Unit tests for HotelService (public API layer).
@@ -166,4 +171,103 @@ class HotelServiceTest {
     verify(hotelsRepo, times(1)).existsById(9L);
     verifyNoInteractions(roomTypesRepo, roomTypeInventoryRepo);
   }
+
+  // ---------- searchHotelsByCityFuzzy ----------
+
+  @Test
+  void searchHotelsByCityFuzzy_trimKeywordAndDelegateToRepo() {
+    // given
+    Hotels h = new Hotels();
+    h.setId(5L);
+    h.setCity("New York");
+
+    when(hotelsRepo.searchCityByPrefix("new"))
+        .thenReturn(List.of(h));
+
+    // when
+    List<Hotels> result = hotelService.searchHotelsByCityFuzzy("  new  ");
+
+    // then
+    assertEquals(1, result.size());
+    assertEquals(5L, result.get(0).getId());
+    verify(hotelsRepo, times(1)).searchCityByPrefix("new");
+  }
+
+  @Test
+  void searchHotelsByCityFuzzy_blankKeyword_throwsBadRequest() {
+    assertThrows(ResponseStatusException.class,
+        () -> hotelService.searchHotelsByCityFuzzy("   "));
+  }
+
+  // ---------- searchAvailableHotelsByCityAndDates ----------
+
+  @Test
+  void searchAvailableHotels_invalidDates_shouldThrowBadRequest() {
+    LocalDate start = LocalDate.of(2026, 1, 10);
+    LocalDate endSame = LocalDate.of(2026, 1, 10);
+    LocalDate endBefore = LocalDate.of(2026, 1, 9);
+
+    assertThrows(ResponseStatusException.class,
+        () -> hotelService.searchAvailableHotelsByCityAndDates("new", start, endSame));
+
+    assertThrows(ResponseStatusException.class,
+        () -> hotelService.searchAvailableHotelsByCityAndDates("new", start, endBefore));
+  }
+
+  @Test
+  void searchAvailableHotels_shouldExcludeHotelIfAnyDayIsUnavailable() {
+    // Given
+    final String keyword = "new";
+    final LocalDate start = LocalDate.of(2026, 1, 10);
+    final LocalDate end = LocalDate.of(2026, 1, 13);
+
+    // Candidate hotel from fuzzy search
+    Hotels h = new Hotels();
+    h.setId(13L);
+    h.setCity("New York");
+
+    when(hotelsRepo.searchCityByPrefix(keyword))
+        .thenReturn(List.of(h));
+
+    // Day 1: available > 0
+    RoomTypeInventory invAvailable = RoomTypeInventory.builder()
+        .id(1L)
+        .hotelId(13L)
+        .roomTypeId(15L)
+        .stayDate(start)
+        .total(8)
+        .reserved(0)
+        .blocked(0)
+        .available(8)
+        .build();
+
+    when(roomTypeInventoryRepo.findByHotelIdAndStayDate(13L, LocalDate.of(2026, 1, 10)))
+        .thenReturn(List.of(invAvailable));
+
+    // Day 2: no availability → available == 0
+    RoomTypeInventory invZero = RoomTypeInventory.builder()
+        .id(2L)
+        .hotelId(13L)
+        .roomTypeId(15L)
+        .stayDate(LocalDate.of(2026, 1, 11))
+        .total(8)
+        .reserved(8)
+        .blocked(0)
+        .available(0)
+        .build();
+
+    when(roomTypeInventoryRepo.findByHotelIdAndStayDate(13L, LocalDate.of(2026, 1, 11)))
+        .thenReturn(List.of(invZero));
+
+    // Day 3 won't be checked because service returns false early
+
+    // When
+    List<Hotels> result =
+        hotelService.searchAvailableHotelsByCityAndDates(keyword, start, end);
+
+    // Then
+    assertTrue(result.isEmpty(),
+        "If any date has no available rooms, the hotel must be excluded.");
+  }
+
 }

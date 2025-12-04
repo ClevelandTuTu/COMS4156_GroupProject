@@ -1,4 +1,4 @@
-package com.project.airhotel.controller;
+package com.project.airhotel.hotel.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 

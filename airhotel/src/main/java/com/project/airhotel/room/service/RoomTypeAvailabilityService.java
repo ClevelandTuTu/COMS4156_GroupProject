@@ -4,35 +4,28 @@ import com.project.airhotel.common.exception.BadRequestException;
 import com.project.airhotel.common.guard.EntityGuards;
 import com.project.airhotel.room.domain.RoomTypeInventory;
 import com.project.airhotel.room.domain.RoomTypes;
+import com.project.airhotel.room.dto.RoomTypeAvailabilityResponse;
 import com.project.airhotel.room.repository.RoomTypeInventoryRepository;
 import com.project.airhotel.room.repository.RoomTypesRepository;
-import com.project.airhotel.room.dto.RoomTypeAvailabilityResponse;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
  * Computes room-type availability within a hotel for a given stay window.
  */
 @Service
+@RequiredArgsConstructor
 public class RoomTypeAvailabilityService {
 
   private final RoomTypesRepository roomTypesRepository;
   private final RoomTypeInventoryRepository roomTypeInventoryRepository;
   private final EntityGuards entityGuards;
-
-  public RoomTypeAvailabilityService(
-      final RoomTypesRepository roomTypesRepository,
-      final RoomTypeInventoryRepository roomTypeInventoryRepository,
-      final EntityGuards entityGuards) {
-    this.roomTypesRepository = roomTypesRepository;
-    this.roomTypeInventoryRepository = roomTypeInventoryRepository;
-    this.entityGuards = entityGuards;
-  }
 
   /**
    * Returns room types that have availability for the entire stay window.

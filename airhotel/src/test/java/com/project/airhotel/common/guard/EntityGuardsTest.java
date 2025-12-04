@@ -25,7 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Unit tests for {@link EntityGuards}.
- * <p>
  * Verifies normal behavior and error scenarios for entity existence and ownership validations.
  */
 @ExtendWith(MockitoExtension.class)
